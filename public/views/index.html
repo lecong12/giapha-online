@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gia Phả Online - Quản lý gia đình hiện đại</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../style/style.css">
+</head>
+<body class="auth-page">
+    <div class="background-animation">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="logo-circle">
+                    <i class="fas fa-sitemap"></i>
+                </div>
+                <h1 class="auth-title">Gia Phả Online</h1>
+                <p class="auth-subtitle">Quản lý gia đình một cách hiện đại</p>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label>Đăng nhập với vai trò:</label>
+                    <select id="loginRole" required>
+                        <option value="owner">Admin</option>
+                        <option value="viewer">Viewer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-code"></i> Viewer Code </label>
+                    <input type="text" id="viewercode" name="viewer_code">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Email</label>
+                    <input type="text" id="loginUsername" name="email" placeholder="Email only for admin" required>
+                </div>
+                <div class="form-group password-group">
+                    <label><i class="fas fa-lock"></i> Mật khẩu</label>
+                    <input type="password" id="loginPassword" name="password" placeholder="*********" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('loginPassword')" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <p class="error-message" id="loginError"></p>
+                <button type="submit" class="btn-primary">
+                    <span class="btn-text">Đăng Nhập</span>
+                    <span class="btn-loader"><i class="fas fa-spinner fa-spin"></i></span>
+                </button>
+            </form>
+
+            <!-- REGISTER FORM (chỉ email + password) -->
+            <form id="registerForm" class="auth-form hidden">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Họ và Tên</label>
+                    <input type="text" id="registerFullname" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="registerEmail" placeholder="admin@example.com" required>
+                </div>
+                <div class="form-group password-group">
+                    <label><i class="fas fa-lock"></i> Mật khẩu</label>
+                    <input type="password" id="registerPassword" placeholder="*********" required minlength="6">
+                    <button type="button" class="toggle-password" onclick="togglePassword('registerPassword')" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="form-group password-group">
+                    <label><i class="fas fa-lock"></i> Nhập lại mật khẩu</label>
+                    <input type="password" id="registerConfirmPassword" placeholder="*********" required>
+                    <button type="button" class="toggle-password" onclick="togglePassword('registerConfirmPassword')" tabindex="-1">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <p class="error-message" id="registerError"></p>
+                <p class="success-message" id="registerSuccess" style="display:none;"></p>
+                <button type="submit" class="btn-primary">
+                    <span class="btn-text">Đăng Ký Admin</span>
+                    <span class="btn-loader"><i class="fas fa-spinner fa-spin"></i></span>
+                </button>
+            </form>
+
+            <div class="auth-toggle">
+                <p id="toggleText">Chưa có tài khoản?</p>
+                <button type="button" id="toggleBtn" class="link-btn">Đăng Ký</button>
+            </div>            
+        </div>
+    </div>
+    <script src="../components/auth.js" defer></script>
+</body>
+</html>

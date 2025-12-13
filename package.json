@@ -1,0 +1,26 @@
+{
+  "name": "giaphaonline",
+  "version": "1.0.0",
+  "description": "Gia Pha Online - NodeJS + SQLite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "gia pha",
+    "family tree",
+    "nodejs",
+    "sqlite"
+  ],
+  "author": "Muynh",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.3",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

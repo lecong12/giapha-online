@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gia Phả Online - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../style/style.css">
+</head>
+<body class="dashboard-page">
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-container">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-sitemap"></i>
+                </div>
+                <div class="header-info">
+                    <h1>Gia Phả Online</h1>
+                    <p class="user-role" id="userRole"></p>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="user-name" id="userName"></span>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Đăng Xuất
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <div class="tabs-container">
+        <button class="tab-btn active" data-tab="dashboard" onclick="switchTab(event, 'dashboard')">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </button>
+        <button class="tab-btn" data-tab="tree" onclick="switchTab(event, 'tree')">
+            <i class="fas fa-sitemap"></i> Cây Gia Phả
+        </button>
+        <button class="tab-btn" data-tab="members" onclick="switchTab(event, 'members')">
+            <i class="fas fa-users"></i> Danh Sách Thành Viên
+        </button>
+        <button class="tab-btn" data-tab="settings" onclick="switchTab(event, 'settings')">
+            <i class="fas fa-cog"></i> Cài Đặt
+        </button>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <!-- DASHBOARD TAB -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f97316, #fbbf24);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Tổng Thành Viên</h3>
+                        <div class="stat-number" id="totalMembers">0</div>
+                        <span class="stat-change positive">↑ Cập nhật</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4, #0ea5e9);">
+                        <i class="fas fa-male"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Nam</h3>
+                        <div class="stat-number" id="maleCount">0</div>
+                        <span class="stat-change positive" id="malePercent">50%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">
+                        <i class="fas fa-female"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Nữ</h3>
+                        <div class="stat-number" id="femaleCount">0</div>
+                        <span class="stat-change positive" id="femalePercent">50%</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Thế Hệ</h3>
+                        <div class="stat-number" id="generationCount">0</div>
+                        <span class="stat-change positive">Gia phả</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GENERATION CHART -->
+            <div class="tree-section">
+                <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                    <i class="fas fa-chart-bar" style="color: var(--primary);"></i> Phân Bố Thế Hệ
+                </h3>
+                <div id="generationChart"></div>
+            </div>
+
+            <!-- BIRTHDAYS & ACTIVITIES -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px;">
+                <div class="tree-section">
+                    <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                        <i class="fas fa-birthday-cake" style="color: var(--primary);"></i> Sinh Nhật Sắp Tới
+                    </h3>
+                    <div id="birthdayList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                </div>
+
+                <div class="tree-section">
+                    <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                        <i class="fas fa-history" style="color: var(--primary);"></i> Hoạt Động Gần Đây
+                    </h3>
+                    <div id="activityList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAMILY TREE TAB -->
+        <div id="tree" class="tab-content">
+            <div class="tree-section">
+                <div class="tree-controls">
+                    <button class="btn-control" onclick="zoomIn()">
+                        <i class="fas fa-search-plus"></i> Phóng To
+                    </button>
+                    <button class="btn-control" onclick="zoomOut()">
+                        <i class="fas fa-search-minus"></i> Thu Nhỏ
+                    </button>
+                    <button class="btn-control" onclick="resetZoom()">
+                        <i class="fas fa-redo"></i> Đặt Lại
+                    </button>
+                    <button class="btn-control" onclick="downloadTree()">
+                        <i class="fas fa-download"></i> Tải Xuống
+                    </button>
+                </div>
+                <svg id="familyTreeSvg" style="width: 100%; height: auto; min-height: 600px; border: 2px solid #fed7aa; border-radius: 16px; background: #fffbf0;"></svg>
+            </div>
+        </div>
+
+        <!-- MEMBERS TAB -->
+        <div id="members" class="tab-content">
+            <div class="tree-section">
+                <div class="members-header">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm thành viên...">
+                    </div>
+                    <button class="btn-add" onclick="openAdvancedSearch()" style="background: linear-gradient(135deg, #06b6d4, #0ea5e9);">
+                        <i class="fas fa-filter"></i> Tìm Nâng Cao
+                    </button>
+                    <button class="btn-add" onclick="openAddMemberModal()">
+                        <i class="fas fa-plus"></i> Thêm Thành Viên
+                    </button>
+                </div>
+                <div class="members-grid" id="membersGrid"></div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content">
+            <div class="tree-section">
+                <h2 style="margin-bottom: 24px; font-size: 20px;">⚙️ Cài Đặt & Công Cụ</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+                    <div class="settings-card" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i>
+                        <h3>📥 Xuất PDF</h3>
+                        <p>Xuất gia phả dưới dạng PDF</p>
+                    </div>
+                    <div class="settings-card" onclick="importData()">
+                        <i class="fas fa-file-csv"></i>
+                        <h3>📤 Nhập Dữ Liệu</h3>
+                        <p>Nhập dữ liệu từ file CSV</p>
+                    </div>
+                    <div class="settings-card" onclick="resetData()">
+                        <i class="fas fa-redo"></i>
+                        <h3>📄 Khôi Phục Mẫu</h3>
+                        <p>Khôi phục dữ liệu mẫu mặc định</p>
+                    </div>
+                    <div id="adminPanel"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MEMBER DETAIL MODAL -->
+    <div id="memberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Thông Tin Thành Viên</h2>
+                <button class="close-btn" onclick="closeMemberModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="memberDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT MEMBER MODAL -->
+    <div id="addMemberModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="addModalTitle">Thêm Thành Viên</h2>
+                <button class="close-btn" onclick="closeAddMemberModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="memberForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Họ và Tên *</label>
+                            <input type="text" id="memberName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Giới Tính</label>
+                            <select id="memberGender">
+                                <option value="male">Nam</option>
+                                <option value="female">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ngày Sinh *</label>
+                            <input type="date" id="memberBirth" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày Mất</label>
+                            <input type="date" id="memberDeath">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Số Điện Thoại</label>
+                            <input type="tel" id="memberPhone" placeholder="0912345678">
+                        </div>
+                        <div class="form-group">
+                            <label>Thế Hệ</label>
+                            <select id="memberGeneration">
+                                <option value="1">Thế hệ 1</option>
+                                <option value="2">Thế hệ 2</option>
+                                <option value="3">Thế hệ 3</option>
+                                <option value="4">Thế hệ 4</option>
+                                <option value="5">Thế hệ 5</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nghề Nghiệp</label>
+                            <input type="text" id="memberJob" placeholder="Ví dụ: Giáo viên">
+                        </div>
+                        <div class="form-group">
+                            <label>Địa Chỉ</label>
+                            <input type="text" id="memberAddress" placeholder="Ví dụ: Hà Nội">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ghi Chú / Mối Quan Hệ</label>
+                        <textarea id="memberNote" placeholder="Ví dụ: Ông ngoài, Bà, v.v."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cha/Mẹ</label>
+                            <select id="memberParent">
+                                <option value="">-- Không có --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Vợ/Chồng</label>
+                            <select id="memberSpouse">
+                                <option value="">-- Không có --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" onclick="closeAddMemberModal()">Hủy</button>
+                        <button type="submit" class="btn-save">Lưu Thành Viên</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADVANCED SEARCH MODAL -->
+    <div id="advancedSearchModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>🔍 Tìm Kiếm Nâng Cao</h2>
+                <button class="close-btn" onclick="closeAdvancedSearch()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="advancedSearchForm" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group">
+                        <label>Họ và Tên</label>
+                        <input type="text" id="searchName" placeholder="Nhập tên thành viên...">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Thế Hệ</label>
+                            <select id="searchGeneration">
+                                <option value="">-- Tất cả --</option>
+                                <option value="1">Thế hệ 1</option>
+                                <option value="2">Thế hệ 2</option>
+                                <option value="3">Thế hệ 3</option>
+                                <option value="4">Thế hệ 4</option>
+                                <option value="5">Thế hệ 5</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Giới Tính</label>
+                            <select id="searchGender">
+                                <option value="all">-- Tất cả --</option>
+                                <option value="male">Nam</option>
+                                <option value="female">Nữ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Trạng Thái</label>
+                            <select id="searchStatus">
+                                <option value="">-- Tất cả --</option>
+                                <option value="living">Đang sống</option>
+                                <option value="deceased">Quá cố</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nghề Nghiệp</label>
+                            <input type="text" id="searchJob" placeholder="Ví dụ: Giáo viên">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tuổi từ</label>
+                            <input type="number" id="searchAgeMin" placeholder="Tuổi tối thiểu" min="0" max="150">
+                        </div>
+                        <div class="form-group">
+                            <label>Tuổi đến</label>
+                            <input type="number" id="searchAgeMax" placeholder="Tuổi tối đa" min="0" max="150">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Địa Chỉ</label>
+                        <input type="text" id="searchAddress" placeholder="Ví dụ: Hà Nội">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" onclick="resetAdvancedSearch()">Đặt Lại</button>
+                        <button type="button" class="btn-save" onclick="performAdvancedSearch()">Tìm Kiếm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js" defer></script>
+    <script src="familyTreeRenderer.js" defer></script>
+    <script src="dashboard.js" defer></script>
+</body>
+</html>
