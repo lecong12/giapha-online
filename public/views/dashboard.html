@@ -107,16 +107,16 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 30px;">
                 <div class="tree-section">
                     <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 18px;">
-                        <i class="fas fa-birthday-cake" style="color: var(--primary);"></i> Sinh Nhật Sắp Tới
+                        <i class="fas fa-birthday-cake" style="color: var(--primary);"></i> Sinh Nhật Sắp Tới (trong 45 ngày tới)
                     </h3>
-                    <div id="birthdayList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    <div id="birthdayList" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 500px;"></div>
                 </div>
 
                 <div class="tree-section">
                     <h3 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; font-size: 18px;">
                         <i class="fas fa-history" style="color: var(--primary);"></i> Hoạt Động Gần Đây
                     </h3>
-                    <div id="activityList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    <div id="activityList" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 500px;"></div>
                 </div>
             </div>
         </div>

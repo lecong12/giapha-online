@@ -159,6 +159,10 @@ async function loadDashboardStats() {
 
     // 4. Sinh nhật sắp tới (raw, sẽ render sau)
     const upcoming = stats.upcomingBirthdays || [];
+    renderUpcomingBirthdays(upcoming);
+
+    const activities = stats.activities || [];
+    renderRecentActivities(activities);
   } catch (err) {
     console.error('Không thể kết nối server.', err);
   }
@@ -265,14 +269,124 @@ function renderGenerationPie(genDist, total) {
 // Màu cho từng thế hệ (lặp lại nếu nhiều)
 function getGenerationColor(index) {
     const colors = [
-        '#f97316', // cam
-        '#0ea5e9', // xanh dương
-        '#22c55e', // xanh lá
-        '#a855f7', // tím
-        '#f43f5e', // đỏ hồng
-        '#14b8a6'  // teal
+        '#f97316', '#000000ff',
+        '#0ea5e9', '#1eff00ff',
+        '#43ad6aff', '#5300beff',
+        '#a855f7', 
+        '#f43f5e', 
+        '#0e6b60ff', 
+        '#203475ff', 
+        '#eea932ff',
+        '#ff0fd7ff',
+        '#8b5cf6ff',
+        '#6d0606ff', 
+        '#314640ff',
     ];
     return colors[index % colors.length];
+}
+function renderUpcomingBirthdays(list) {
+  const container = document.getElementById('birthdayList');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!list.length) {
+    container.textContent = 'Chưa có sinh nhật sắp tới.';
+    return;
+  }
+
+  list.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'birthday-item';
+    row.style.display = 'flex';
+    row.style.flexDirection = 'column';
+    row.style.padding = '8px 12px';
+    row.style.borderRadius = '8px';
+    row.style.background = 'rgba(250, 247, 247, 1)';
+    row.style.boxShadow = '0px 3px 5px rgba(0,0,0,0.2)';
+    row.style.maxWidth = '95%';
+
+    const top = document.createElement('div');
+    top.style.display = 'flex';
+    top.style.justifyContent = 'space-between';
+    top.style.alignItems = 'center';
+    top.style.marginBottom = '4px';
+
+    const name = document.createElement('span');
+    name.style.fontWeight = '600';
+    name.textContent = item.full_name;
+
+    const days = document.createElement('span');
+    days.style.fontSize = '12px';
+    days.style.color = '#16a34a';
+    days.textContent = item.daysLeft === 0
+      ? 'Hôm nay'
+      : `Còn ${item.daysLeft} ngày`;
+
+    top.appendChild(name);
+    top.appendChild(days);
+
+    const bottom = document.createElement('div');
+    bottom.style.fontSize = '12px';
+    bottom.style.color = '#555';
+    bottom.textContent = `Ngày sinh: ${item.birthday} (lần tới: ${item.nextBirthday})`;
+
+    row.appendChild(top);
+    row.appendChild(bottom);
+    container.appendChild(row);
+  });
+}
+function renderRecentActivities(list) {
+  const container = document.getElementById('activityList');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!list.length) {
+    container.textContent = 'Chưa có hoạt động gần đây.';
+    return;
+  }
+
+  list.forEach(item => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.justifyContent = 'space-between';
+    row.style.alignItems = 'center';
+    row.style.padding = '8px 12px';
+    row.style.borderRadius = '8px';
+    row.style.background = 'rgba(255,255,255,0.7)';
+    row.style.boxShadow = '0px 3px 5px rgba(0,0,0,0.2)';
+    row.style.maxWidth = '95%';
+
+    // Bên trái: tên + ngày sinh nhật gần nhất
+    const left = document.createElement('div');
+    left.style.display = 'flex';
+    left.style.flexDirection = 'column';
+
+    const name = document.createElement('span');
+    name.style.fontWeight = '600';
+    name.textContent = item.full_name;
+
+    const detail = document.createElement('span');
+    detail.style.fontSize = '12px';
+    detail.style.color = '#555';
+    detail.textContent = `Sinh nhật gần nhất: ${item.date}`;
+
+    left.appendChild(name);
+    left.appendChild(detail);
+
+    // Bên phải: số ngày trước
+    const right = document.createElement('span');
+    right.style.fontSize = '12px';
+    right.style.color = '#2563eb';
+    right.textContent = item.daysAgo === 0
+      ? 'Hôm nay'
+      : `Cách đây ${item.daysAgo} ngày`;
+
+    row.appendChild(left);
+    row.appendChild(right);
+    container.appendChild(row);
+  });
 }
 
 /* ==========================================================
