@@ -1,50 +1,26 @@
 // src/utils/activityLogger.js
+const mongoose = require('mongoose');
 
-/**
- * Ghi log hoạt động vào database
- * @param {Object} db - Database instance
- * @param {Object} params - Log parameters
- * @param {number} params.owner_id - ID chủ sở hữu
- * @param {number} params.actor_id - ID người thực hiện
- * @param {string} params.actor_role - Role: 'owner' hoặc 'viewer'
- * @param {string} params.actor_name - Tên người thực hiện
- * @param {string} params.action_type - 'create', 'update', 'delete'
- * @param {string} params.entity_type - 'member', 'post', 'viewer', 'setting'
- * @param {string} params.entity_name - Tên đối tượng (optional)
- * @param {string} params.description - Mô tả chi tiết
- */
-function logActivity(db, params) {
-  const {
-    owner_id,
-    actor_id,
-    actor_role,
-    actor_name,
-    action_type,
-    entity_type,
-    entity_name,
-    description
-  } = params;
-
-  const sql = `
-    INSERT INTO activity_logs 
-    (owner_id, actor_id, actor_role, actor_name, action_type, entity_type, entity_name, description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.run(sql, [
-    owner_id,
-    actor_id,
-    actor_role,
-    actor_name,
-    action_type,
-    entity_type,
-    entity_name || null,
-    description
-  ], (err) => {
-    if (err) {
-      console.error('❌ Lỗi ghi activity log:', err.message);
-    }
-  });
+async function logActivity(db, params) {
+  try {
+    // db param được giữ lại để tương thích ngược nhưng không dùng
+    const Activity = mongoose.model('Activity');
+    
+    await Activity.create({
+      owner_id: params.owner_id,
+      actor_id: params.actor_id,
+      actor_role: params.actor_role,
+      actor_name: params.actor_name,
+      action_type: params.action_type,
+      entity_type: params.entity_type,
+      entity_name: params.entity_name,
+      description: params.description
+    });
+    
+    console.log(`📝 Logged: ${params.description}`);
+  } catch (err) {
+    console.error('❌ Lỗi ghi log:', err);
+  }
 }
 
 module.exports = {

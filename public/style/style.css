@@ -710,13 +710,28 @@ body {
 }
 
 .legend-color.male {
-    background: #dbeafe;
-    border-color: #0ea5e9;
+    background: #fff7ed;
+    border-color: #f97316;
 }
 
 .legend-color.female {
     background: #fce7f3;
     border-color: #ec4899;
+}
+
+.legend-color.son-in-law {
+    background: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.legend-color.daughter-in-law {
+    background: #faf5ff;
+    border-color: #a855f7;
+}
+
+.legend-color.unknown {
+    background: #f3f4f6;
+    border-color: #9ca3af;
 }
 
 .legend-color.marriage {
@@ -725,8 +740,8 @@ body {
 }
 
 .legend-color.parent-child {
-    background: linear-gradient(90deg, #0ea5e9, #06b6d4);
-    border-color: #0ea5e9;
+    background: linear-gradient(90deg, #f97316, #fbbf24);
+    border-color: #f97316;
 }
 
 .legend-color.deceased {
@@ -1781,7 +1796,7 @@ body {
 }
 
 .btn-copy {
-    background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    background: linear-gradient(135deg, #f97316, #fb923c);
     color: white;
     border: none;
     padding: 8px 16px;
@@ -1796,9 +1811,9 @@ body {
 }
 
 .btn-copy:hover {
-    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+    background: linear-gradient(135deg, #ea580c, #f97316);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
 .viewer-badge {

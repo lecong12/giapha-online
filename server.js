@@ -1,69 +1,225 @@
-// server.js
+require('dotenv').config(); // Load biến môi trường
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 const cors = require("cors");
+const fs = require("fs");
+const mongoose = require("mongoose"); // Chuyển sang Mongoose
+const os = require('os'); // Thêm thư viện lấy IP
 
 const app = express();
-const PORT = 8060;
+// KHAI BÁO PORT DUY NHẤT Ở ĐÂY
+const PORT = process.env.PORT || 8060;
+// Hỗ trợ cả MONGO_URI và MONGODB_URI (đề phòng đặt tên khác)
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/giapha';
 
-// Middleware
-app.use(cors());
+// CẤU HÌNH CORS MỞ RỘNG (FIX LỖI KẾT NỐI)
+app.use(cors({
+    origin: '*', // Cho phép tất cả nguồn (Live Server, file://...)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'] // Cho phép rõ ràng header Authorization
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Public folder
+// --- LOG REQUEST (Để debug lỗi kết nối) ---
+app.use((req, res, next) => {
+    console.log(`📥 ${req.method} ${req.url}`);
+    next();
+});
+
+// --- ĐẢM BẢO THƯ MỤC UPLOADS TỒN TẠI ---
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+
 const PUBLIC_DIR = path.join(__dirname, "public");
 app.use(express.static(PUBLIC_DIR));
 
-// ================== ĐĂNG KÝ ROUTES ==================
-const authRoutes = require("./src/routes/authRoutes");
-app.use("/api/auth", authRoutes);
+// --- LOAD MODELS ---
+try {
+    require('./User');
+    require('./Person');
+    require('./Post');
+    require('./Activity');
+    console.log("✅ Models loaded successfully");
+} catch (err) {
+    console.error("❌ Lỗi tải Models:", err.message);
+    // Không crash app, chỉ báo lỗi
+}
 
-const dashboardRoutes = require("./src/routes/dashboardRoutes");
-app.use("/api/dashboard", dashboardRoutes);
+// --- ROUTES ---
+// Hàm helper để load route an toàn (không crash nếu thiếu file)
+const safeRoute = (pathStr) => {
+    try {
+        return require(pathStr);
+    } catch (e) {
+        console.warn(`⚠️ Cảnh báo: Không tìm thấy route '${pathStr}'. API này sẽ tạm thời không hoạt động.`);
+        console.warn(`⚠️ Cảnh báo: Không tìm thấy route '${pathStr}' hoặc file bị lỗi. API này sẽ tạm thời không hoạt động. Lỗi: ${e.message}`);
+        return (req, res) => res.status(501).json({ error: "Route not implemented or file missing", path: pathStr });
+    }
+};
 
-const membersRoutes = require("./src/routes/membersRoutes");
-app.use("/api/members", membersRoutes);
+app.use("/api/auth", safeRoute("./src/routes/authRoutes"));
+app.use("/api/members", safeRoute("./src/routes/membersRoutes"));
+app.use("/api/dashboard", safeRoute("./src/routes/dashboardRoutes"));
+app.use("/api/posts", safeRoute("./src/routes/postsRoutes"));
+app.use("/api/viewers", safeRoute("./src/routes/viewerRoutes"));
+app.use("/api/activities", safeRoute("./src/routes/activityRoutes"));
+app.use("/api/settings", safeRoute("./src/routes/settingsRoutes"));
 
-const settingsRoutes = require("./src/routes/settingsRoutes");
-app.use("/api/settings", settingsRoutes);
+// --- API HEALTH CHECK (Để Frontend kiểm tra kết nối) ---
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Server is running' }));
 
-const viewerRoutes = require("./src/routes/viewerRoutes");
-app.use("/api/viewers", viewerRoutes);
+// --- API TẠO DỮ LIỆU MẪU (SEED DATA) ---
+app.get('/api/seed', async (req, res) => {
+    try {
+        const User = mongoose.model('User');
+        const Person = mongoose.model('Person');
 
-const postsRoutes = require("./src/routes/postsRoutes");
-app.use("/api/posts", postsRoutes);
-// Thêm vào sau postsRoutes
-const activityRoutes = require("./src/routes/activityRoutes");
-app.use("/api/activities", activityRoutes);
-// ================== HTML ROUTES ==================
-app.get("/", (req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, "views", "root.html"));
-});
+        // 1. Tạo tài khoản Admin (nếu chưa có)
+        let admin = await User.findOne({ username: 'admin' });
+        if (!admin) {
+            // Password hash cho '123' (SHA256)
+            const crypto = require('crypto');
+            const hash = crypto.createHash('sha256').update('123').digest('hex');
+            
+            admin = await User.create({
+                username: 'admin',
+                password: hash, // Lưu hash thay vì plain text
+                password_hash: hash,
+                full_name: 'Admin',
+                role: 'owner',
+                viewer_code: 'ADMIN12345'
+            });
+            // Tự update owner_id
+            admin.owner_id = admin._id;
+            await admin.save();
+        }
 
-app.get("/login", (req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, "views", "index.html"));
-});
-
-app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, 'views', 'dashboard.html'));
-});
-
-// ================== DATABASE ==================
-const DB_PATH = path.join(__dirname, "database", "giapha.db");
-
-const db = new sqlite3.Database(DB_PATH, (err) => {
-    if (err) {
-        console.error("❌ Không thể kết nối SQLite:", err.message);
-    } else {
-        console.log("✅ Kết nối SQLite thành công:", DB_PATH);
+        // 2. Tạo dữ liệu mẫu nếu chưa có
+        const memberCount = await Person.countDocuments({ owner_id: admin._id });
+        if (memberCount === 0) {
+            await Person.create({
+                owner_id: admin._id,
+                full_name: 'Thủy Tổ Dòng Họ (Mẫu)',
+                gender: 'male',
+                generation: 1,
+                is_alive: false,
+                notes: 'Dữ liệu mẫu khởi tạo tự động'
+            });
+            return res.json({ message: "✅ Đã tạo dữ liệu thành công! Tài khoản: admin / Mật khẩu: 123" });
+        }
+        res.json({ message: "⚠️ Dữ liệu đã có sẵn, không cần tạo lại." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
-app.set("db", db);
+// HTML ROUTES
+app.get("/", (req, res) => {
+    // Tự động tìm file index.html hoặc login.html (ưu tiên thư mục gốc public)
+    // ĐỔI THỨ TỰ: Ưu tiên tìm trong views/ trước để đảm bảo chạy file mới nhất bạn đang sửa
+    const possibleFiles = ["views/index.html", "index.html", "views/login.html", "login.html"];
+    for (const file of possibleFiles) {
+        const fullPath = path.join(PUBLIC_DIR, file);
+        if (fs.existsSync(fullPath)) return res.sendFile(fullPath);
+    }
+    res.status(404).send("<h1>Lỗi: Không tìm thấy file giao diện (index.html)</h1><p>Hãy kiểm tra lại thư mục public.</p>");
+});
+app.get('/dashboard', (req, res) => res.sendFile(path.join(PUBLIC_DIR, "views", "dashboard.html")));
+app.get('/login', (req, res) => res.redirect('/')); // Chuyển hướng về trang chủ để đăng nhập
+app.get('/register', (req, res) => res.sendFile(path.join(PUBLIC_DIR, "views", "register.html")));
 
-// ================== START SERVER ==================
-app.listen(PORT, () => {
-    console.log(`🚀 Server chạy tại: http://localhost:${PORT}`);
+// KẾT NỐI MONGODB VÀ START SERVER
+// 1. Start Server NGAY LẬP TỨC để Render nhận diện Port (Tránh lỗi Exited Early)
+try {
+    app.listen(PORT, '0.0.0.0', () => {
+        // Lấy địa chỉ IP LAN để tiện truy cập từ điện thoại
+        let lanIp = 'localhost';
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+            for (const iface of interfaces[name]) {
+                if (iface.family === 'IPv4' && !iface.internal) {
+                    lanIp = iface.address;
+                    break;
+                }
+            }
+        }
+
+        console.log(`\n==================================================`);
+        console.log(`🚀 SERVER ĐANG CHẠY (PORT ${PORT})`);
+        console.log(`👉 Local:   http://localhost:${PORT}`);
+        console.log(`👉 LAN/Wifi: http://${lanIp}:${PORT} (Dùng cái này cho điện thoại)`);
+        console.log(`==================================================\n`);
+    });
+} catch (err) {
+    console.error("❌ KHÔNG THỂ KHỞI ĐỘNG SERVER:", err.message);
+}
+
+// 2. Kết nối MongoDB (Chạy song song)
+console.log("⏳ Đang kết nối MongoDB...");
+
+// Log kiểm tra xem đang dùng link nào (Che mật khẩu để an toàn)
+console.log(`👉 Connection String: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}`);
+
+// --- HÀM KẾT NỐI DB CÓ RETRY ---
+const connectDB = async () => {
+    try {
+        await mongoose.connect(MONGO_URI, {
+            serverSelectionTimeoutMS: 5000,
+        });
+        console.log("✅ Đã kết nối MongoDB thành công.");
+        initAdmin(); // Khởi tạo admin sau khi kết nối
+    } catch (err) {
+        console.error("❌ Lỗi kết nối MongoDB:", err.message);
+        console.log("⏳ Đang thử lại sau 5 giây...");
+        setTimeout(connectDB, 5000);
+    }
+};
+
+const initAdmin = async () => {
+    try {
+        try {
+            const User = mongoose.model('User');
+            const crypto = require('crypto');
+            const hash = crypto.createHash('sha256').update('123').digest('hex');
+            
+            // Tìm hoặc tạo mới admin (upsert)
+            const admin = await User.findOneAndUpdate(
+                { username: 'admin' },
+                { 
+                    password: hash, 
+                    password_hash: hash, 
+                    full_name: 'Quản trị viên', 
+                    role: 'owner',
+                    viewer_code: 'ADMIN12345' // Đảm bảo Admin luôn có mã viewer
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+            
+            // Đảm bảo owner_id chính xác
+            if (!admin.owner_id || admin.owner_id.toString() !== admin._id.toString()) {
+                admin.owner_id = admin._id;
+                await admin.save();
+            }
+            console.log("\n🔑 ========================================================");
+            console.log("👤 TÀI KHOẢN ADMIN (Chứa dữ liệu mẫu/import):");
+            console.log("👉 User: admin  |  Pass: 123");
+            console.log("========================================================\n");
+        } catch (e) {
+            console.error("⚠️ Lỗi khởi tạo Admin:", e.message);
+        }
+    } catch (err) {
+        console.error("❌ Init Admin Error:", err);
+    }
+};
+
+connectDB();
+
+// --- GLOBAL ERROR HANDLER (CHỐNG CRASH SERVER) ---
+process.on('uncaughtException', (err) => {
+    console.error('💥 UNCAUGHT EXCEPTION! Server vẫn chạy...', err);
+});
+process.on('unhandledRejection', (err) => {
+    console.error('💥 UNHANDLED REJECTION! Server vẫn chạy...', err);
 });

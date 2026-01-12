@@ -1,110 +1,79 @@
 // src/controller/activityController.js
-const { logActivity } = require('../utils/activityLogger');
-
-function getDb(req) {
-  return req.app.get('db');
-}
+const mongoose = require('mongoose');
+const Activity = mongoose.model('Activity');
+const User = mongoose.model('User');
 
 /* ============================================================
    1. LẤY DANH SÁCH ACTIVITY LOGS
 ============================================================ */
 async function getActivityLogs(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  // Xác định ownerId
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) {
+        return res.status(403).json({ success: false, message: 'Không tìm thấy owner' });
       }
-      
-      fetchActivityLogs(db, row.owner_id, res);
-    });
-  } else {
-    fetchActivityLogs(db, userId, res);
-  }
-}
-
-// Helper function
-function fetchActivityLogs(db, ownerId, res) {
-  const sql = `
-    SELECT 
-      id, actor_name, actor_role, action_type, entity_type, 
-      entity_name, description, created_at
-    FROM activity_logs
-    WHERE owner_id = ?
-    ORDER BY created_at DESC
-    LIMIT 50
-  `;
-
-  db.all(sql, [ownerId], (err, rows) => {
-    if (err) {
-      console.error('Lỗi getActivityLogs:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
+      ownerId = viewer.owner_id;
     }
 
-    return res.json({ success: true, logs: rows });
-  });
+    const logs = await Activity.find({ owner_id: ownerId })
+      .sort({ created_at: -1 })
+      .limit(50);
+
+    // Map _id to id for frontend
+    const result = logs.map(log => ({
+      id: log._id,
+      ...log.toObject()
+    }));
+
+    return res.json({ success: true, logs: result });
+  } catch (err) {
+    console.error('Lỗi getActivityLogs:', err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 /* ============================================================
    2. XÓA 1 LOG (CHỈ OWNER)
 ============================================================ */
 async function deleteLog(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
   const logId = req.params.id;
 
   if (userRole !== 'owner') {
-    return res.status(403).json({ 
-      success: false, 
-      message: '⛔ Chỉ Admin mới có quyền xóa lịch sử' 
-    });
+    return res.status(403).json({ success: false, message: 'Không có quyền' });
   }
 
-  const sql = `DELETE FROM activity_logs WHERE id = ? AND owner_id = ?`;
-
-  db.run(sql, [logId, userId], function(err) {
-    if (err) {
-      console.error('Lỗi deleteLog:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi xóa log' });
-    }
-
+  try {
+    await Activity.findOneAndDelete({ _id: logId, owner_id: userId });
     return res.json({ success: true, message: 'Đã xóa lịch sử' });
-  });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Lỗi xóa log' });
+  }
 }
 
 /* ============================================================
    3. XÓA TẤT CẢ LOGS (CHỈ OWNER)
 ============================================================ */
 async function clearAllLogs(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
 
   if (userRole !== 'owner') {
-    return res.status(403).json({ 
-      success: false, 
-      message: '⛔ Chỉ Admin mới có quyền xóa lịch sử' 
-    });
+    return res.status(403).json({ success: false, message: 'Không có quyền' });
   }
 
-  const sql = `DELETE FROM activity_logs WHERE owner_id = ?`;
-
-  db.run(sql, [userId], function(err) {
-    if (err) {
-      console.error('Lỗi clearAllLogs:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi xóa logs' });
-    }
-
-    return res.json({ success: true, message: `Đã xóa ${this.changes} lịch sử` });
-  });
+  try {
+    await Activity.deleteMany({ owner_id: userId });
+    return res.json({ success: true, message: 'Đã xóa toàn bộ lịch sử' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Lỗi xóa logs' });
+  }
 }
 
 module.exports = {

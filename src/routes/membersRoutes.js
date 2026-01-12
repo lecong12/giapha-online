@@ -1,28 +1,14 @@
 // src/routes/membersRoutes.js
 const express = require('express');
 const router = express.Router();
-const {
-  getAllMembers,
-  getMemberById,
-  createMember,
-  updateMember,
-  deleteMember,
-  searchMembers
-} = require('../controller/membersController');
+const membersController = require('../controller/membersController');
+const { checkAuth } = require('../middleware/auth');
 
-// Import middleware phân quyền
-const { checkAuth, checkOwnerOnly } = require('../middleware/auth');
-
-// ================== ROUTES ==================
-
-// Routes CHỈ ĐỌC - Cả viewer và owner đều được xem
-router.get('/', checkAuth, getAllMembers);
-router.get('/:id', checkAuth, getMemberById);
-router.post('/search', checkAuth, searchMembers);
-
-// Routes GHI - CHỈ OWNER mới được thêm/sửa/xóa
-router.post('/', checkAuth, checkOwnerOnly, createMember);
-router.put('/:id', checkAuth, checkOwnerOnly, updateMember);
-router.delete('/:id', checkAuth, checkOwnerOnly, deleteMember);
+router.get('/', checkAuth, membersController.getAllMembers);
+router.get('/:id', checkAuth, membersController.getMemberById);
+router.post('/', checkAuth, membersController.createMember);
+router.put('/:id', checkAuth, membersController.updateMember);
+router.delete('/:id', checkAuth, membersController.deleteMember);
+router.post('/search', checkAuth, membersController.searchMembers);
 
 module.exports = router;

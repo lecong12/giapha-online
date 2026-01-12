@@ -1,387 +1,180 @@
 // src/controller/postsController.js
-const { logActivity } = require('../utils/activityLogger');
-
-function getDb(req) {
-  return req.app.get('db');
-}
+const mongoose = require('mongoose');
+const Post = mongoose.model('Post');
+const User = mongoose.model('User');
+// const { logActivity } = require('../utils/activityLogger'); // Tạm tắt nếu chưa có file này
 
 /* ============================================================
    1. LẤY TẤT CẢ BÀI VIẾT
 ============================================================ */
 async function getAllPosts(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
+  try {
+    let ownerId = userId;
+
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) {
+        return res.status(403).json({ success: false, message: 'Không tìm thấy owner' });
       }
-      
-      fetchAllPosts(db, row.owner_id, res);
-    });
-  } else {
-    fetchAllPosts(db, userId, res);
+      ownerId = viewer.owner_id;
+    }
+
+    await fetchAllPosts(ownerId, res);
+  } catch (err) {
+    console.error('Lỗi getAllPosts:', err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 }
 
-function fetchAllPosts(db, ownerId, res) {
-  const sql = `
-    SELECT 
-      p.id, p.title, p.content, p.category, p.is_pinned,
-      p.created_at, p.updated_at,
-      p.author_id, p.author_role,
-      u.full_name as author_name
-    FROM posts p
-    LEFT JOIN users u ON p.author_id = u.id
-    WHERE p.owner_id = ?
-    ORDER BY p.is_pinned DESC, p.created_at DESC
-  `;
+async function fetchAllPosts(ownerId, res) {
+  // Lấy posts và populate tên tác giả
+  const posts = await Post.find({ owner_id: ownerId })
+    .sort({ is_pinned: -1, created_at: -1 })
+    .lean();
 
-  db.all(sql, [ownerId], (err, rows) => {
-    if (err) {
-      console.error('Lỗi getAllPosts:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
-    }
+  // Lấy thông tin author thủ công (vì author có thể là User hoặc Viewer)
+  const authorIds = [...new Set(posts.map(p => p.author_id))];
+  const authors = await User.find({ _id: { $in: authorIds } }, 'full_name').lean();
+  const authorMap = {};
+  authors.forEach(a => authorMap[a._id] = a.full_name);
 
-    return res.json({ success: true, posts: rows });
-  });
+  const result = posts.map(p => ({
+    id: p._id, // Frontend dùng .id
+    ...p,
+    author_name: authorMap[p.author_id] || (p.author_role === 'owner' ? 'Admin' : 'Viewer')
+  }));
+
+  return res.json({ success: true, posts: result });
 }
 
 /* ============================================================
    2. LẤY CHI TIẾT 1 BÀI VIẾT
 ============================================================ */
 async function getPostById(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
   const postId = req.params.id;
 
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
-      }
-      
-      fetchPostById(db, postId, row.owner_id, res);
-    });
-  } else {
-    fetchPostById(db, postId, userId, res);
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) return res.status(403).json({ success: false, message: 'Lỗi quyền' });
+      ownerId = viewer.owner_id;
+    }
+
+    const post = await Post.findOne({ _id: postId, owner_id: ownerId }).lean();
+    if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết' });
+
+    const author = await User.findById(post.author_id, 'full_name').lean();
+    
+    const result = {
+      id: post._id,
+      ...post,
+      author_name: author ? author.full_name : 'Unknown'
+    };
+
+    return res.json({ success: true, post: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
   }
-}
-
-function fetchPostById(db, postId, ownerId, res) {
-  const sql = `
-    SELECT 
-      p.id, p.title, p.content, p.category, p.is_pinned,
-      p.created_at, p.updated_at,
-      p.author_id, p.author_role,
-      u.full_name as author_name
-    FROM posts p
-    LEFT JOIN users u ON p.author_id = u.id
-    WHERE p.id = ? AND p.owner_id = ?
-  `;
-
-  db.get(sql, [postId, ownerId], (err, row) => {
-    if (err) {
-      console.error('Lỗi getPostById:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
-    }
-
-    if (!row) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết' });
-    }
-
-    return res.json({ success: true, post: row });
-  });
 }
 
 /* ============================================================
    3. TẠO BÀI VIẾT MỚI
 ============================================================ */
 async function createPost(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
-
   const { title, content, category, is_pinned } = req.body;
 
-  // Validate
-  if (!title || !title.trim()) {
-    return res.status(400).json({ success: false, message: 'Tiêu đề không được để trống' });
-  }
+  if (!title || !content) return res.status(400).json({ success: false, message: 'Thiếu thông tin' });
 
-  if (!content || !content.trim()) {
-    return res.status(400).json({ success: false, message: 'Nội dung không được để trống' });
-  }
-
-  if (category && !['announcement', 'event', 'news'].includes(category)) {
-    return res.status(400).json({ success: false, message: 'Danh mục không hợp lệ' });
-  }
-
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
-      }
-
-      insertPost(db, row.owner_id, userId, userRole, req.body, res);
-    });
-  } else {
-    insertPost(db, userId, userId, userRole, req.body, res);
-  }
-}
-
-function insertPost(db, ownerId, authorId, authorRole, data, res) {
-  const { title, content, category, is_pinned } = data;
-
-  const sql = `
-    INSERT INTO posts (owner_id, author_id, author_role, title, content, category, is_pinned)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.run(sql, [
-    ownerId,
-    authorId,
-    authorRole,
-    title.trim(),
-    content.trim(),
-    category || 'announcement',
-    is_pinned ? 1 : 0
-  ], function(err) {
-    if (err) {
-      console.error('Lỗi createPost:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi tạo bài viết' });
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) return res.status(403).json({ success: false, message: 'Lỗi quyền' });
+      ownerId = viewer.owner_id;
     }
 
-    // ✅ LẤY TÊN USER TRƯỚC KHI LOG
-    db.get(`SELECT full_name FROM users WHERE id = ?`, [authorId], (errUser, user) => {
-      const actorName = user ? user.full_name : (authorRole === 'owner' ? 'Admin' : 'Viewer');
-
-      logActivity(db, {
-        owner_id: ownerId,
-        actor_id: authorId,
-        actor_role: authorRole,
-        actor_name: actorName,
-        action_type: 'create',
-        entity_type: 'post',
-        entity_name: title.trim(),
-        description: `Đã tạo bài viết: ${title.trim()}`
-      });
+    const newPost = await Post.create({
+      owner_id: ownerId,
+      author_id: userId,
+      author_role: userRole,
+      title: title.trim(),
+      content: content.trim(),
+      category: category || 'announcement',
+      is_pinned: !!is_pinned
     });
 
-    return res.json({ 
-      success: true, 
-      message: 'Tạo bài viết thành công',
-      postId: this.lastID 
-    });
-  });
+    res.json({ success: true, message: 'Tạo bài viết thành công', postId: newPost._id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 /* ============================================================
    4. SỬA BÀI VIẾT
 ============================================================ */
 async function updatePost(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
-  const userRole = req.user.role;
   const postId = req.params.id;
-
   const { title, content, category, is_pinned } = req.body;
 
-  // Validate
-  if (!title || !title.trim()) {
-    return res.status(400).json({ success: false, message: 'Tiêu đề không được để trống' });
-  }
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết' });
 
-  if (!content || !content.trim()) {
-    return res.status(400).json({ success: false, message: 'Nội dung không được để trống' });
-  }
-
-  if (category && !['announcement', 'event', 'news'].includes(category)) {
-    return res.status(400).json({ success: false, message: 'Danh mục không hợp lệ' });
-  }
-
- checkEditPermission(db, postId, userId, userRole, (err, hasPermission, ownerId) => {
-    if (err || !hasPermission) {
-      return res.status(403).json({ 
-        success: false, 
-        message: '⛔ Bạn không có quyền sửa bài viết này' 
-      });
+    // Chỉ tác giả mới được sửa
+    if (post.author_id.toString() !== userId) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa bài này' });
     }
 
-    const sql = `
-      UPDATE posts SET
-        title = ?, content = ?, category = ?, is_pinned = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND owner_id = ?
-    `;
-
-    db.run(sql, [
-      title.trim(),
-      content.trim(),
-      category || 'announcement',
-      is_pinned ? 1 : 0,
-      postId,
-      ownerId
-    ], function(errUpdate) {
-      if (errUpdate) {
-        console.error('Lỗi updatePost:', errUpdate.message);
-        return res.status(500).json({ success: false, message: 'Lỗi cập nhật bài viết' });
-      }
-
-      // ✅ LẤY TÊN USER TRƯỚC KHI LOG
-      db.get(`SELECT full_name FROM users WHERE id = ?`, [userId], (errUser, user) => {
-        const actorName = user ? user.full_name : (userRole === 'owner' ? 'Admin' : 'Viewer');
-
-        logActivity(db, {
-          owner_id: ownerId,
-          actor_id: userId,
-          actor_role: userRole,
-          actor_name: actorName,
-          action_type: 'update',
-          entity_type: 'post',
-          entity_name: title.trim(),
-          description: `Đã cập nhật bài viết: ${title.trim()}`
-        });
-      });
-
-      return res.json({ success: true, message: 'Cập nhật bài viết thành công' });
-    });
-  });
+    post.title = title || post.title;
+    post.content = content || post.content;
+    post.category = category || post.category;
+    post.is_pinned = is_pinned !== undefined ? is_pinned : post.is_pinned;
+    
+    await post.save();
+    res.json({ success: true, message: 'Cập nhật thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 /* ============================================================
    5. XÓA BÀI VIẾT
 ============================================================ */
 async function deletePost(req, res) {
-  const db = getDb(req);
   const userId = req.user.id;
   const userRole = req.user.role;
   const postId = req.params.id;
 
-  checkDeletePermission(db, postId, userId, userRole, (err, hasPermission, ownerId) => {
-    if (err || !hasPermission) {
-      return res.status(403).json({ 
-        success: false, 
-        message: '⛔ Bạn không có quyền xóa bài viết này' 
-      });
+  try {
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết' });
+
+    // Owner được xóa tất cả, Viewer chỉ xóa của mình
+    const isOwner = userRole === 'owner' && post.owner_id.toString() === userId;
+    const isAuthor = post.author_id.toString() === userId;
+
+    if (!isOwner && !isAuthor) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa bài này' });
     }
 
-    // Lấy title trước khi xóa
-    db.get(`SELECT title FROM posts WHERE id = ?`, [postId], (errGet, post) => {
-      if (errGet || !post) {
-        return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết' });
-      }
-
-      const postTitle = post.title;
-
-      // Lấy tên user
-      db.get(`SELECT full_name FROM users WHERE id = ?`, [userId], (errUser, user) => {
-        const actorName = user ? user.full_name : (userRole === 'owner' ? 'Admin' : 'Viewer');
-
-        // Tiến hành xóa
-        const sql = `DELETE FROM posts WHERE id = ? AND owner_id = ?`;
-
-        db.run(sql, [postId, ownerId], function(errDel) {
-          if (errDel) {
-            console.error('Lỗi deletePost:', errDel.message);
-            return res.status(500).json({ success: false, message: 'Lỗi xóa bài viết' });
-          }
-
-          // LOG HOẠT ĐỘNG
-          logActivity(db, {
-            owner_id: ownerId,
-            actor_id: userId,
-            actor_role: userRole,
-            actor_name: actorName,
-            action_type: 'delete',
-            entity_type: 'post',
-            entity_name: postTitle,
-            description: `Đã xóa bài viết: ${postTitle}`
-          });
-
-          return res.json({ success: true, message: 'Xóa bài viết thành công' });
-        });
-      });
-    });
-  });
-}
-
-/* ============================================================
-   6. HELPER: KIỂM TRA QUYỀN
-============================================================ */
-/* ============================================================
-   HELPER: KIỂM TRA QUYỀN SỬA (EDIT)
-   - Owner chỉ được sửa bài viết của chính mình
-   - Viewer chỉ được sửa bài viết của chính mình
-============================================================ */
-function checkEditPermission(db, postId, userId, userRole, callback) {
-  const sql = `
-    SELECT p.owner_id, p.author_id, u.owner_id as viewer_owner_id
-    FROM posts p
-    LEFT JOIN users u ON u.id = ?
-    WHERE p.id = ?
-  `;
-
-  db.get(sql, [userId, postId], (err, row) => {
-    if (err || !row) {
-      return callback(err || new Error('Post not found'), false, null);
-    }
-
-    const ownerId = userRole === 'viewer' ? row.viewer_owner_id : userId;
-
-    // CHỈ CÓ THỂ SỬA BÀI VIẾT CỦA CHÍNH MÌNH
-    if (row.author_id === userId) {
-      return callback(null, true, ownerId);
-    }
-
-    return callback(null, false, null);
-  });
-}
-
-/* ============================================================
-   HELPER: KIỂM TRA QUYỀN XÓA (DELETE)
-   - Owner có thể xóa TẤT CẢ bài viết (kể cả của viewer)
-   - Viewer chỉ được xóa bài viết của chính mình
-============================================================ */
-function checkDeletePermission(db, postId, userId, userRole, callback) {
-  const sql = `
-    SELECT p.owner_id, p.author_id, u.owner_id as viewer_owner_id
-    FROM posts p
-    LEFT JOIN users u ON u.id = ?
-    WHERE p.id = ?
-  `;
-
-  db.get(sql, [userId, postId], (err, row) => {
-    if (err || !row) {
-      return callback(err || new Error('Post not found'), false, null);
-    }
-
-    const ownerId = userRole === 'viewer' ? row.viewer_owner_id : userId;
-
-    // OWNER: Xóa tất cả bài viết trong hệ thống của mình
-    if (userRole === 'owner' && row.owner_id === userId) {
-      return callback(null, true, ownerId);
-    }
-
-    // VIEWER: Chỉ xóa bài viết của chính mình
-    if (userRole === 'viewer' && row.author_id === userId) {
-      return callback(null, true, ownerId);
-    }
-
-    return callback(null, false, null);
-  });
+    await Post.findByIdAndDelete(postId);
+    res.json({ success: true, message: 'Xóa thành công' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 module.exports = {

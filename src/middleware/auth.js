@@ -6,17 +6,31 @@
    - Parse token và lưu thông tin user vào req.user
 ============================================================ */
 function checkAuth(req, res, next) {
-  const authHeader = req.headers['authorization'] || '';
-  const parts = authHeader.split(' ');
+  let token = null;
 
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Thiếu hoặc sai header Authorization' 
-    });
+  // 1. Ưu tiên lấy từ Header (Bearer Token)
+  const authHeader = req.headers['authorization'];
+  if (authHeader) {
+    const parts = authHeader.split(' ');
+    // Chấp nhận cả 'Bearer' và 'bearer'
+    if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+      token = parts[1];
+    }
   }
 
-  const token = parts[1];
+  // 2. Fallback: Lấy từ Query Param (URL?token=...)
+  if (!token && req.query && req.query.token) token = req.query.token;
+
+  // 3. Fallback: Lấy từ Body (Form Data - yêu cầu body parser/multer chạy trước)
+  if (!token && req.body && req.body.token) token = req.body.token;
+
+  if (!token) {
+    console.warn('⚠️ [Auth Fail] Không tìm thấy token.');
+    console.warn('   - Header:', authHeader);
+    console.warn('   - Query:', req.query);
+    console.warn('   - Body:', req.body); // Kiểm tra xem body có dữ liệu không
+    return res.status(401).json({ success: false, message: 'Thiếu hoặc sai header Authorization' });
+  }
 
   try {
     const tokenParts = token.split('_');
@@ -33,9 +47,8 @@ function checkAuth(req, res, next) {
       throw new Error('Token prefix invalid');
     }
 
-    // Validate user ID
-    const userId = Number(userIdPart);
-    if (!Number.isInteger(userId) || userId <= 0) {
+    // Validate user ID (should be a non-empty string for MongoDB ObjectId)
+    if (!userIdPart || userIdPart.trim() === '') {
       throw new Error('User id invalid');
     }
 
@@ -46,7 +59,7 @@ function checkAuth(req, res, next) {
 
     // Lưu thông tin user vào request
     req.user = {
-      id: userId,
+      id: userIdPart, // ✅ Sử dụng ID dạng chuỗi
       role: prefix === 'viewer' ? 'viewer' : 'owner'
     };
 

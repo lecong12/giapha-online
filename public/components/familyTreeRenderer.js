@@ -28,7 +28,7 @@ class FamilyTreeRenderer {
             
             gapX: 40,
             gapY: 100,
-            spouseGap: 10,
+            spouseGap: 30, // ✅ Tăng khoảng cách để vẽ đường nối vợ chồng
 
             padding: 80,
 
@@ -37,13 +37,24 @@ class FamilyTreeRenderer {
             gridGapY: 20,
 
             colors: {
-                maleBorder: '#0ea5e9',
-                maleBg: '#e0f2fe',
+                maleBorder: '#f97316',
+                maleBg: '#fff7ed',
                 femaleBorder: '#ec4899',
                 femaleBg: '#fce7f3',
+                
+                // ✅ MÀU MỚI CHO DÂU / RỂ
+                sonInLawBorder: '#3b82f6', // Xanh dương (Rể)
+                sonInLawBg: '#eff6ff',
+                daughterInLawBorder: '#a855f7', // Tím (Dâu)
+                daughterInLawBg: '#faf5ff',
+
+                // ✅ MÀU CHO CHƯA RÕ GIỚI TÍNH
+                unknownBorder: '#9ca3af', // Xám
+                unknownBg: '#f3f4f6',
+
                 deadBg: '#1f2937',
                 deadText: '#f3f4f6',
-                line: '#06b6d4',
+                line: '#f97316',
                 textName: '#111827',
                 textInfo: '#4b5563'
             }
@@ -84,9 +95,12 @@ class FamilyTreeRenderer {
             startClientX: 0,
             startClientY: 0,
             moved: false,
-            suppressClick: false
+            suppressClick: false,
+            evCache: [], // Cache cho multi-touch events
+            prevDiff: -1 // Khoảng cách giữa 2 ngón tay trước đó
         };
         
+        this.isFullTreeMode = false; // Flag theo dõi chế độ hiển thị
         this.setupPanZoom();
     }
     setTargetPerson(id) {
@@ -115,7 +129,12 @@ class FamilyTreeRenderer {
             this.allMarriages = result.data.marriages || [];
             
             // Xác định người được chọn
-            this.selectedPersonId = personId || 1; // Mặc định id=1
+            if (personId) {
+                this.selectedPersonId = personId;
+            } else if (!this.selectedPersonId) {
+                this.selectedPersonId = (this.allPeople.length > 0) ? this.allPeople[0].id : 1;
+            }
+            this.targetPersonId = this.selectedPersonId;
             
             // Lọc dữ liệu theo người được chọn
             this.filterDataByPerson(this.selectedPersonId);
@@ -165,6 +184,7 @@ class FamilyTreeRenderer {
                 personId = spouseId;
                 selectedPerson = spouse;
                 this.selectedPersonId = spouseId; // ← THÊM DÒNG NÀY
+                this.targetPersonId = spouseId; // ✅ FIX: Cập nhật targetPersonId khi chuyển sang vợ/chồng
                 
                 console.log(`📍 PersonId mới: ${personId}, Tên: ${selectedPerson.full_name}`);
             }
@@ -182,6 +202,25 @@ class FamilyTreeRenderer {
     this.findAncestors(personId, relatedIds);
     console.log(`  → Tìm thấy ${relatedIds.size} người sau khi tìm tổ tiên`);
     
+    // 2.5. [MỚI] Tìm ANH CHỊ EM của TỔ TIÊN (Ông chú, Bà cô...)
+    // Giúp cây hiển thị đầy đủ các nhánh ngang ở các đời trên
+    const ancestorIds = Array.from(relatedIds);
+    ancestorIds.forEach(ancId => {
+        // Tìm cha mẹ của ancestor này
+        const parents = this.allRelationships
+            .filter(r => r.child_id === ancId)
+            .map(r => r.parent_id);
+        
+        parents.forEach(pId => {
+            // Tìm tất cả con của cha mẹ này (tức là anh chị em của ancId)
+            const siblings = this.allRelationships
+                .filter(r => r.parent_id === pId)
+                .map(r => r.child_id);
+            
+            siblings.forEach(sibId => relatedIds.add(sibId));
+        });
+    });
+
     // 3. Tìm CON CHÁU (đi xuống dưới)
     console.log('⬇️ Tìm con cháu...');
     this.findDescendants(personId, relatedIds);
@@ -390,7 +429,25 @@ class FamilyTreeRenderer {
     // 6) Không vẽ lưới người không liên quan
     this.unrelatedPeople = [];
 }
+
+    /**
+     * ✅ Hàm mới: Highlight người dùng trong cây hiện tại (Full hoặc Partial)
+     */
+    highlightInCurrentTree(personId) {
+        this.targetPersonId = personId;
+        this.selectedPersonId = personId;
+        
+        if (this.isFullTreeMode) {
+            // Nếu đang ở chế độ Full Tree, render lại full tree (để update highlight và zoom)
+            this.renderFullTree();
+        } else {
+            // Nếu đang ở chế độ Partial, render cây của người đó
+            this.render(personId);
+        }
+    }
+
 async render(personId = null) {
+    this.isFullTreeMode = false; // Đánh dấu đang ở chế độ Partial
     const loaded = await this.loadData(personId);
     if (!loaded && this.people.length === 0) {
         this.showEmptyState();
@@ -415,8 +472,7 @@ async render(personId = null) {
     if (rootPerson) {
         // ✅ Leo ngược lên tìm Thủy Tổ (trong dữ liệu đã lọc)
         let attempts = 0;
-        const maxAttempts = 10; // Tránh vòng lặp vô hạn
-        
+        const maxAttempts = 100;
         while (attempts < maxAttempts) {
             const parentRel = this.relationships.find(r => r.child_id === rootPerson.id);
             
@@ -431,7 +487,7 @@ async render(personId = null) {
             attempts++;
         }
         
-        console.log(`🌳 Root của cây: ${rootPerson.full_name} (Đời ${rootPerson.generation || '?'})`);
+        console.log(`🌳 Root của cây: ${rootPerson.full_name} (Đời thứ ${rootPerson.generation || '?'})`);
     }
 
     // Mảng roots bây giờ chỉ chứa duy nhất 1 người (hoặc 0 nếu lỗi)
@@ -456,21 +512,51 @@ async render(personId = null) {
     // --- VẼ ---
     let maxX = 0;
     let maxY = 0;
+    
+    // ✅ [MỚI] Xác định đường dẫn huyết thống (Ancestry Path) để highlight
+    const ancestorPath = new Set();
+    let curr = this.targetPersonId;
+    ancestorPath.add(curr);
+    // Leo ngược lên từ target để lấy danh sách ID tổ tiên trực hệ
+    let safety = 0;
+    while(safety < 100) {
+        const rel = this.relationships.find(r => r.child_id === curr);
+        if (!rel) break;
+        curr = rel.parent_id;
+        ancestorPath.add(curr);
+        safety++;
+    }
 
     // Vẽ đường nối
     this.nodesToRender.forEach(node => {
         if (node.childrenNodes.length > 0) {
-            this.drawForkConnection(mainGroup, node);
+            this.drawForkConnection(mainGroup, node, ancestorPath);
         }
     });
 
     // Vẽ thẻ
     this.nodesToRender.forEach(node => {
-        this.drawCard(mainGroup, node.person, node.x, node.y);
+        let leftPerson = node.person;
+        let rightPerson = node.spouse;
+
+        // ✅ Sắp xếp: Nam trái, Nữ phải
+        if (rightPerson) {
+            const gender = (leftPerson.gender || '').toLowerCase();
+            if (gender === 'nữ' || gender === 'female' || gender === 'nu') {
+                leftPerson = node.spouse;
+                rightPerson = node.person;
+            }
+        }
+
+        this.drawCard(mainGroup, leftPerson, node.x, node.y);
         
-        if (node.spouse) {
+        if (rightPerson) {
             const spouseX = node.x + this.config.cardWidth + this.config.spouseGap;
-            this.drawCard(mainGroup, node.spouse, spouseX, node.y);
+            this.drawCard(mainGroup, rightPerson, spouseX, node.y);
+            
+            // ✅ Vẽ đường nối vợ chồng
+            this.drawSpouseConnection(mainGroup, node.x, spouseX, node.y);
+            
             maxX = Math.max(maxX, spouseX + this.config.cardWidth);
         } else {
             maxX = Math.max(maxX, node.x + this.config.cardWidth);
@@ -493,7 +579,78 @@ async render(personId = null) {
     const finalH = Math.max(maxY + this.config.padding, 800);
     this.svg.setAttribute('viewBox', `0 0 ${finalW} ${finalH}`);
     this.applyTransform();
+    
+    // ✅ [MỚI] Tự động căn giữa vào người được chọn (với zoom 100%)
+    this.centerOnTarget();
 }
+
+    // ✅ Hàm căn giữa vào người được chọn
+    centerOnTarget() {
+        // Sử dụng == để so sánh ID (tránh lỗi string vs number)
+        // FIX: Tìm node chứa target (có thể là person chính hoặc spouse)
+        const targetNode = this.nodesToRender.find(n => 
+            (n.person && n.person.id == this.targetPersonId) || 
+            (n.spouse && n.spouse.id == this.targetPersonId)
+        );
+        
+        if (targetNode) {
+            const svgWidth = this.svg.clientWidth || 800;
+            const svgHeight = this.svg.clientHeight || 600;
+            
+            // ✅ FIX: Đặt mức zoom là 1.2 (120%) để nhìn rõ ngay lập tức
+            this.scale = 1.2;
+            
+            // Tọa độ tâm của thẻ target
+            let nodeCenterX = targetNode.x + this.config.cardWidth / 2;
+            // Nếu target là spouse (người bên phải), cần cộng thêm offset
+            if (targetNode.spouse && targetNode.spouse.id == this.targetPersonId) {
+                const spouseX = targetNode.x + this.config.cardWidth + this.config.spouseGap;
+                nodeCenterX = spouseX + this.config.cardWidth / 2;
+            }
+            const nodeCenterY = targetNode.y + this.config.cardHeight / 2;
+            
+            // Tính toán vị trí để đưa node vào giữa màn hình
+            this.view.pointX = (svgWidth / 2) - (nodeCenterX * this.scale);
+            this.view.pointY = (svgHeight / 2) - (nodeCenterY * this.scale);
+            
+            this.applyTransform();
+        } else {
+            // Fallback: Nếu không tìm thấy node (hiếm), căn giữa toàn bộ
+            this.centerContent();
+        }
+    }
+
+    // ✅ Hàm căn giữa và Zoom to Fit toàn bộ nội dung
+    centerContent() {
+        const mainGroup = this.svg.querySelector('#mainGroup');
+        if (!mainGroup) return;
+
+        // Lấy kích thước thật của nội dung
+        const bbox = mainGroup.getBBox();
+        if (bbox.width === 0 && bbox.height === 0) return; // Cho phép 1 chiều = 0 (vd cây 1 người)
+
+        const svgWidth = this.svg.clientWidth || 800;
+        const svgHeight = this.svg.clientHeight || 600;
+        const padding = 40;
+
+        // 1. Tính toán Scale để vừa khít màn hình (nếu cây to hơn màn hình)
+        const scaleX = (svgWidth - padding * 2) / bbox.width;
+        const scaleY = (svgHeight - padding * 2) / bbox.height;
+        let newScale = Math.min(scaleX, scaleY);
+
+        // ✅ FIX: Ưu tiên hiển thị rõ (Zoom to lên tí) thay vì fit toàn bộ
+        // Nếu cây quá lớn, ta đặt scale mặc định là 0.85 để người dùng nhìn thấy chữ ngay
+        this.scale = Math.min(Math.max(newScale, 0.85), 1.2);
+
+        // 2. Tính toán vị trí để đưa tâm nội dung vào tâm màn hình
+        const contentCenterX = bbox.x + bbox.width / 2;
+        const contentCenterY = bbox.y + bbox.height / 2;
+
+        this.view.pointX = (svgWidth / 2) - (contentCenterX * this.scale);
+        this.view.pointY = (svgHeight / 2) - (contentCenterY * this.scale);
+
+        this.applyTransform();
+    }
 
     // --- CÁC HÀM LOGIC CÂY (GIỮ NGUYÊN) ---
 
@@ -508,7 +665,14 @@ async render(personId = null) {
         const children = Array.from(kidsSet)
             .map(id => this.peopleMap.get(id))
             .filter(p => p)
-            .sort((a, b) => (a.birth_date || '').localeCompare(b.birth_date || ''));
+            .sort((a, b) => {
+                // ✅ Ưu tiên sắp xếp theo Order (Thứ tự)
+                const orderA = (a.order !== undefined && a.order !== null) ? a.order : 9999;
+                const orderB = (b.order !== undefined && b.order !== null) ? b.order : 9999;
+                if (orderA !== orderB) return orderA - orderB;
+                // Nếu không có order thì sắp xếp theo ngày sinh
+                return (a.birth_date || '').localeCompare(b.birth_date || '');
+            });
             
         return {
             person: person,
@@ -570,7 +734,7 @@ async render(personId = null) {
 
     // --- CÁC HÀM VẼ (GIỮ NGUYÊN) ---
 
-    drawForkConnection(group, node) {
+    drawForkConnection(group, node, ancestorPath = new Set()) {
         const startY = node.y + this.config.cardHeight;
         let startX;
 
@@ -582,7 +746,11 @@ async render(personId = null) {
 
         const midY = startY + this.config.gapY / 2;
 
-        this.createLine(group, startX, startY, startX, midY);
+        // Kiểm tra xem đường này có thuộc dòng máu trực hệ của target không
+        // Node hiện tại phải nằm trong path (là tổ tiên)
+        const isNodeInPath = ancestorPath.has(node.person.id);
+
+        this.createLine(group, startX, startY, startX, midY, isNodeInPath);
 
         const firstChild = node.childrenNodes[0];
         const lastChild = node.childrenNodes[node.childrenNodes.length - 1];
@@ -596,23 +764,57 @@ async render(personId = null) {
         const minChildX = getChildCenterX(firstChild);
         const maxChildX = getChildCenterX(lastChild);
 
-        this.createLine(group, minChildX, midY, maxChildX, midY);
+        // Đường ngang không cần highlight đặc biệt, hoặc highlight nếu node cha là tổ tiên
+        this.createLine(group, minChildX, midY, maxChildX, midY, false);
 
         node.childrenNodes.forEach(child => {
             const childX = getChildCenterX(child);
-            this.createLine(group, childX, midY, childX, child.y);
+            
+            // Highlight đường đi xuống con nếu con cũng nằm trong path (tức là con là cha/ông của target, hoặc chính là target)
+            const isChildInPath = isNodeInPath && ancestorPath.has(child.person.id);
+            
+            this.createLine(group, childX, midY, childX, child.y, isChildInPath);
         });
     }
 
-    createLine(group, x1, y1, x2, y2) {
+    createLine(group, x1, y1, x2, y2, isHighlight = false) {
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('x1', x1);
         line.setAttribute('y1', y1);
         line.setAttribute('x2', x2);
         line.setAttribute('y2', y2);
-        line.setAttribute('stroke', this.config.colors.line);
+        
+        // Màu cam đậm nếu là đường huyết thống, màu xanh nhạt nếu bình thường
+        line.setAttribute('stroke', isHighlight ? '#f97316' : this.config.colors.line);
+        line.setAttribute('stroke-width', isHighlight ? '4' : '2');
+        if (isHighlight) line.setAttribute('stroke-linecap', 'round');
+        
+        group.appendChild(line);
+    }
+
+    // ✅ Hàm vẽ đường nối vợ chồng
+    drawSpouseConnection(group, x1, x2, y) {
+        const lineY = y + this.config.cardHeight / 2;
+        const startX = x1 + this.config.cardWidth;
+        const endX = x2;
+        
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', startX);
+        line.setAttribute('y1', lineY);
+        line.setAttribute('x2', endX);
+        line.setAttribute('y2', lineY);
+        line.setAttribute('stroke', '#f472b6'); // Màu hồng nhạt cho hôn nhân
         line.setAttribute('stroke-width', '2');
         group.appendChild(line);
+
+        // Thêm chấm tròn ở giữa
+        const cx = (startX + endX) / 2;
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', cx);
+        circle.setAttribute('cy', lineY);
+        circle.setAttribute('r', '4');
+        circle.setAttribute('fill', '#f472b6');
+        group.appendChild(circle);
     }
 
     drawCard(group, person, x, y) {
@@ -621,12 +823,67 @@ async render(personId = null) {
         g.style.cursor = 'pointer';
         g.onclick = () => this.showPersonDetail(person);
 
-        const isMale = person.gender === 'Nam';
-        const isDead = !person.is_alive || person.death_date;
+        // ✅ Chuẩn hóa giới tính
+        const genderLower = (person.gender || '').toLowerCase();
+        const isMale = genderLower === 'nam' || genderLower === 'male' || genderLower === 'trai';
+        const isFemale = genderLower === 'nữ' || genderLower === 'nu' || genderLower === 'female' || genderLower === 'gái';
+        
+        // ✅ Kiểm tra trạng thái
+        const isDead = !person.is_alive || (person.death_date && person.death_date !== 'unknown');
+        const isTarget = person.id === this.targetPersonId; // ✅ Kiểm tra nếu là người được chọn
+        const isInLaw = person.member_type === 'in_law'; // ✅ Kiểm tra dâu/rể
 
-        const bgColor = isDead ? this.config.colors.deadBg : (isMale ? this.config.colors.maleBg : this.config.colors.femaleBg);
-        const strokeColor = isMale ? this.config.colors.maleBorder : this.config.colors.femaleBorder;
-        const textColor = isDead ? this.config.colors.deadText : this.config.colors.textName;
+        let bgColor, strokeColor, textColor;
+
+        if (isDead) {
+            bgColor = this.config.colors.deadBg;
+            strokeColor = '#6b7280'; // Viền xám cho người đã mất
+            textColor = this.config.colors.deadText;
+        } else {
+            textColor = this.config.colors.textName;
+            if (isInLaw) {
+                // 🎨 Màu cho Dâu / Rể
+                bgColor = isMale ? this.config.colors.sonInLawBg : this.config.colors.daughterInLawBg;
+                strokeColor = isMale ? this.config.colors.sonInLawBorder : this.config.colors.daughterInLawBorder;
+            } else {
+                // 🎨 Màu cho Huyết thống (Con ruột)
+                if (isMale) {
+                    bgColor = this.config.colors.maleBg;
+                    strokeColor = this.config.colors.maleBorder;
+                } else if (isFemale) {
+                    bgColor = this.config.colors.femaleBg;
+                    strokeColor = this.config.colors.femaleBorder;
+                } else {
+                    // Chưa rõ giới tính
+                    bgColor = this.config.colors.unknownBg;
+                    strokeColor = this.config.colors.unknownBorder;
+                }
+            }
+        }
+
+        // ✅ [MỚI] HIỆU ỨNG HALO (VÒNG SÁNG) - Vẽ trước để nằm dưới thẻ
+        if (isTarget) {
+            const halo = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            const haloPadding = 8;
+            halo.setAttribute('x', -haloPadding);
+            halo.setAttribute('y', -haloPadding);
+            halo.setAttribute('width', this.config.cardWidth + haloPadding * 2);
+            halo.setAttribute('height', this.config.cardHeight + haloPadding * 2);
+            halo.setAttribute('rx', '16');
+            halo.setAttribute('fill', 'none');
+            halo.setAttribute('stroke', '#ef4444'); // Màu đỏ đậm
+            halo.setAttribute('stroke-width', '3');
+            halo.setAttribute('stroke-dasharray', '8, 4'); // Nét đứt
+            
+            const anim = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            anim.setAttribute('attributeName', 'stroke-opacity');
+            anim.setAttribute('values', '1;0.2;1'); // Nhấp nháy độ mờ
+            anim.setAttribute('dur', '1.5s');
+            anim.setAttribute('repeatCount', 'indefinite');
+            halo.appendChild(anim);
+            
+            g.appendChild(halo);
+        }
 
         // Background
         const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -634,22 +891,31 @@ async render(personId = null) {
         rect.setAttribute('height', this.config.cardHeight);
         rect.setAttribute('rx', '12');
         rect.setAttribute('fill', bgColor);
-        rect.setAttribute('stroke', strokeColor);
-        rect.setAttribute('stroke-width', '2');
+        rect.setAttribute('stroke', isTarget ? '#f59e0b' : strokeColor); // Target ưu tiên màu cam đậm
+        rect.setAttribute('stroke-width', isTarget ? '4' : '2'); // ✅ Viền dày hơn nếu là target
+        
+        // ✅ HIỆU ỨNG HIGHLIGHT (NHẤP NHÁY) CHO TARGET
+        if (isTarget) {
+            const animateColor = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+            animateColor.setAttribute('attributeName', 'stroke');
+            animateColor.setAttribute('values', '#f59e0b;#ef4444;#f59e0b');
+            animateColor.setAttribute('dur', '1.5s');
+            animateColor.setAttribute('repeatCount', 'indefinite');
+            rect.appendChild(animateColor);
+        }
+        
         g.appendChild(rect);
-
         // Avatar
         const clipId = `clip-${person.id}`;
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
         const clipPath = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
         clipPath.setAttribute('id', clipId);
         
-        const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        clipRect.setAttribute('x', (this.config.cardWidth - this.config.avatarSize) / 2);
-        clipRect.setAttribute('y', 15);
-        clipRect.setAttribute('width', this.config.avatarSize);
-        clipRect.setAttribute('height', this.config.avatarSize);
-        clipRect.setAttribute('rx', '8');
+        // ✅ Avatar hình tròn
+        const clipRect = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        clipRect.setAttribute('cx', this.config.cardWidth / 2);
+        clipRect.setAttribute('cy', 15 + this.config.avatarSize / 2);
+        clipRect.setAttribute('r', this.config.avatarSize / 2);
         clipPath.appendChild(clipRect);
         defs.appendChild(clipPath);
         g.appendChild(defs);
@@ -662,20 +928,22 @@ async render(personId = null) {
         img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
         img.setAttribute('clip-path', `url(#${clipId})`);
         
-        const avatarUrl = person.avatar_url || (isMale 
-            ? 'https://cdn-icons-png.flaticon.com/512/4128/4128176.png' 
-            : 'https://cdn-icons-png.flaticon.com/512/4128/4128349.png');
+        // ✅ Chọn Avatar mặc định theo giới tính
+        let defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/149/149071.png'; // Icon User chung (Xám)
+        if (isMale) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128176.png'; // Nam
+        if (isFemale) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128349.png'; // Nữ
+
+        const avatarUrl = person.avatar_url || defaultAvatar;
         img.setAttribute('href', avatarUrl);
         g.appendChild(img);
 
-        const imgBorder = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        imgBorder.setAttribute('x', (this.config.cardWidth - this.config.avatarSize) / 2);
-        imgBorder.setAttribute('y', 15);
-        imgBorder.setAttribute('width', this.config.avatarSize);
-        imgBorder.setAttribute('height', this.config.avatarSize);
-        imgBorder.setAttribute('rx', '8');
+        // ✅ Viền avatar hình tròn
+        const imgBorder = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        imgBorder.setAttribute('cx', this.config.cardWidth / 2);
+        imgBorder.setAttribute('cy', 15 + this.config.avatarSize / 2);
+        imgBorder.setAttribute('r', this.config.avatarSize / 2);
         imgBorder.setAttribute('fill', 'none');
-        imgBorder.setAttribute('stroke', strokeColor);
+        imgBorder.setAttribute('stroke', isTarget ? '#f59e0b' : strokeColor);
         imgBorder.setAttribute('stroke-width', '1');
         g.appendChild(imgBorder);
 
@@ -689,7 +957,13 @@ async render(personId = null) {
         nameText.setAttribute('fill', textColor);
         
         let nameDisplay = person.full_name || 'Không tên';
-        if(nameDisplay.length > 18) nameDisplay = nameDisplay.substring(0, 16) + '..';
+        
+        // Logic rút gọn tên: Nếu > 4 từ thì chỉ lấy 3 từ cuối (theo yêu cầu)
+        const words = nameDisplay.trim().split(/\s+/);
+        if (words.length > 4) {
+            nameDisplay = words.slice(-3).join(' ');
+        }
+        
         nameText.textContent = nameDisplay;
         g.appendChild(nameText);
 
@@ -726,9 +1000,43 @@ yearText.textContent = `s. ${birthYear}`;
              genText.setAttribute('y', 165);
              genText.setAttribute('text-anchor', 'middle');
              genText.setAttribute('font-size', '12');
-             genText.setAttribute('fill', strokeColor);
-             genText.textContent = `Đời ${person.generation || '?'}`;
+             genText.setAttribute('fill', isTarget ? '#d97706' : strokeColor);
+             genText.textContent = `Đời thứ ${person.generation || '?'}`;
              g.appendChild(genText);
+        }
+
+        // ✅ [MỚI] MŨI TÊN CHỈ VỊ TRÍ (INDICATOR) - Vẽ sau cùng để nằm trên
+        if (isTarget) {
+            const arrowGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            // Đặt vị trí ở giữa phía trên thẻ
+            arrowGroup.setAttribute('transform', `translate(${this.config.cardWidth / 2}, -30)`);
+            
+            const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            arrow.setAttribute('d', 'M0,0 L-10,-15 L10,-15 Z'); // Hình tam giác ngược
+            arrow.setAttribute('fill', '#ef4444');
+            
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', 0);
+            text.setAttribute('y', -20);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('fill', '#ef4444');
+            text.setAttribute('font-weight', 'bold');
+            text.setAttribute('font-size', '14');
+            text.textContent = "TÌM THẤY";
+
+            // Animation nảy lên xuống
+            const bounce = document.createElementNS('http://www.w3.org/2000/svg', 'animateTransform');
+            bounce.setAttribute('attributeName', 'transform');
+            bounce.setAttribute('type', 'translate');
+            bounce.setAttribute('values', `0,0; 0,10; 0,0`);
+            bounce.setAttribute('dur', '1s');
+            bounce.setAttribute('repeatCount', 'indefinite');
+            
+            arrowGroup.appendChild(arrow);
+            arrowGroup.appendChild(text);
+            arrowGroup.appendChild(bounce);
+            
+            g.appendChild(arrowGroup);
         }
 
         group.appendChild(g);
@@ -786,7 +1094,13 @@ yearText.textContent = `s. ${birthYear}`;
         const content = document.createElement('div');
         content.style.cssText = `background: white; padding: 25px; border-radius: 12px; max-width: 500px; width: 90%; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.5);`;
         
-        const avatarUrl = person.avatar_url || 'https://cdn-icons-png.flaticon.com/512/4128/4128176.png';
+        // ✅ Avatar popup
+        const genderLower = (person.gender || '').toLowerCase();
+        let defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        if (['nam', 'male', 'trai'].includes(genderLower)) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128176.png';
+        if (['nữ', 'nu', 'female', 'gái'].includes(genderLower)) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128349.png';
+
+        const avatarUrl = person.avatar_url || defaultAvatar;
         
         content.innerHTML = `
             <div style="display: flex; gap: 20px; align-items: start; margin-bottom: 20px;">
@@ -834,6 +1148,7 @@ yearText.textContent = `s. ${birthYear}`;
     setupPanZoom() {
         this.svg.style.touchAction = 'none';
         this.svg.style.cursor = 'grab';
+        this.view.evCache = [];
 
         this.svg.addEventListener('click', (e) => {
             if (!this.view.suppressClick) return;
@@ -852,7 +1167,8 @@ yearText.textContent = `s. ${birthYear}`;
             const factor = Math.exp(-event.deltaY * zoomIntensity);
 
             let newScale = oldScale * factor;
-            newScale = Math.max(0.3, Math.min(50, newScale));
+            // ✅ Tăng giới hạn zoom: Min 0.05 (nhìn xa), Max 200 (soi chi tiết)
+            newScale = Math.max(0.05, Math.min(200, newScale));
 
             if (Math.abs(newScale - oldScale) < 1e-6) return;
 
@@ -869,7 +1185,10 @@ yearText.textContent = `s. ${birthYear}`;
         const DRAG_THRESHOLD_PX = 3;
 
         this.svg.addEventListener('pointerdown', (event) => {
-            if (event.pointerType === 'mouse' && event.button !== 0) return;
+            // Thêm event vào cache để xử lý multi-touch
+            this.view.evCache.push(event);
+            
+            if (event.pointerType === 'mouse' && event.button !== 0) return; 
 
             this.view.panning = true;
             this.view.moved = false;
@@ -893,6 +1212,47 @@ yearText.textContent = `s. ${birthYear}`;
         });
 
         this.svg.addEventListener('pointermove', (event) => {
+            // Cập nhật event trong cache
+            const index = this.view.evCache.findIndex(e => e.pointerId === event.pointerId);
+            if (index > -1) this.view.evCache[index] = event;
+
+            // --- XỬ LÝ PINCH ZOOM (2 NGÓN TAY) ---
+            if (this.view.evCache.length === 2) {
+                const curDiff = Math.hypot(
+                    this.view.evCache[0].clientX - this.view.evCache[1].clientX,
+                    this.view.evCache[0].clientY - this.view.evCache[1].clientY
+                );
+
+                if (this.view.prevDiff > 0) {
+                    // Tính tâm của 2 ngón tay để zoom vào đó
+                    const centerClientX = (this.view.evCache[0].clientX + this.view.evCache[1].clientX) / 2;
+                    const centerClientY = (this.view.evCache[0].clientY + this.view.evCache[1].clientY) / 2;
+                    
+                    const mouse = this.getSVGPoint(centerClientX, centerClientY);
+                    const oldScale = this.scale;
+                    
+                    // Tính tỷ lệ thay đổi khoảng cách
+                    const zoomFactor = curDiff / this.view.prevDiff;
+                    let newScale = oldScale * zoomFactor;
+                    // ✅ Tăng giới hạn zoom cho cảm ứng (Pinch)
+                    newScale = Math.max(0.05, Math.min(200, newScale));
+
+                    const wx = (mouse.x - this.view.pointX) / oldScale;
+                    const wy = (mouse.y - this.view.pointY) / oldScale;
+
+                    this.scale = newScale;
+                    this.view.pointX = mouse.x - wx * newScale;
+                    this.view.pointY = mouse.y - wy * newScale;
+
+                    this.applyTransform();
+                }
+                
+                // Lưu khoảng cách hiện tại cho lần sau
+                this.view.prevDiff = curDiff;
+                return; // Đã xử lý zoom, bỏ qua pan
+            }
+
+            // --- XỬ LÝ PAN (KÉO THẢ 1 NGÓN) ---
             if (!this.view.panning) return;
 
             const p = this.getSVGPoint(event.clientX, event.clientY);
@@ -912,6 +1272,15 @@ yearText.textContent = `s. ${birthYear}`;
         });
 
         const endPan = (event) => {
+            // Xóa event khỏi cache
+            const index = this.view.evCache.findIndex(e => e.pointerId === event.pointerId);
+            if (index > -1) this.view.evCache.splice(index, 1);
+            
+            // Reset diff nếu số ngón tay < 2
+            if (this.view.evCache.length < 2) {
+                this.view.prevDiff = -1;
+            }
+
             if (!this.view.panning) return;
             this.view.panning = false;
 
@@ -950,7 +1319,6 @@ yearText.textContent = `s. ${birthYear}`;
         this.svg.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#ef4444" font-size="20">Error: ${msg}</text>`;
     }
 
-// REPLACE toàn bộ hàm imageToDataURL bằng:
 async imageToDataURL(url) {
     // Hỗ trợ cả đường dẫn tương đối
     const absoluteUrl = url.startsWith('http') ? url : new URL(url, window.location.origin).href;
@@ -974,6 +1342,7 @@ async renderFullTree() {
     console.log('🌳 Bắt đầu render toàn bộ cây...');
         // ✅ SET FLAG để processData() không chạy
     this.isRenderingFullTree = true;
+    this.isFullTreeMode = true; // Đánh dấu đang ở chế độ Full Tree
     try {
         if (!this.allPeople || this.allPeople.length === 0) {
             const loaded = await this.loadData(null);
@@ -1038,12 +1407,14 @@ async renderFullTree() {
 
         // ✅ BƯỚC 4: Vẽ TẤT CẢ cây
         this.renderMultipleTrees(allTrees);
- this.isRenderingFullTree = false;
         console.log('✅ Hoàn thành render toàn bộ cây');
 
     } catch (error) {
         console.error('❌ Lỗi renderFullTree:', error);
         throw error;
+    } finally {
+        // ✅ LUÔN LUÔN Reset flag để không chặn các thao tác sau
+        this.isRenderingFullTree = false;
     }
 }
 /**
@@ -1102,6 +1473,7 @@ renderMultipleTrees(trees) {
     
     // Clear SVG
     this.svg.innerHTML = '';
+    this.nodesToRender = []; // ✅ Reset danh sách node để dùng cho centerOnTarget
     
     // Tạo main group
     const mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1124,6 +1496,7 @@ renderMultipleTrees(trees) {
         // 2. Flatten tree để lấy danh sách nodes
         const nodesInTree = [];
         this.flattenTreeToArray(treeNode, nodesInTree);
+        this.nodesToRender.push(...nodesInTree); // ✅ Thêm vào danh sách tổng
         
         // 3. Vẽ đường nối
         nodesInTree.forEach(node => {
@@ -1134,11 +1507,26 @@ renderMultipleTrees(trees) {
         
         // 4. Vẽ thẻ
         nodesInTree.forEach(node => {
-            this.drawCard(mainGroup, node.person, node.x, node.y);
+            let leftPerson = node.person;
+            let rightPerson = node.spouse;
+
+            // ✅ Sắp xếp: Nam trái, Nữ phải
+            if (rightPerson) {
+                const gender = (leftPerson.gender || '').toLowerCase();
+                if (gender === 'nữ' || gender === 'female' || gender === 'nu') {
+                    leftPerson = node.spouse;
+                    rightPerson = node.person;
+                }
+            }
+
+            this.drawCard(mainGroup, leftPerson, node.x, node.y);
             
-            if (node.spouse) {
+            if (rightPerson) {
                 const spouseX = node.x + this.config.cardWidth + this.config.spouseGap;
-                this.drawCard(mainGroup, node.spouse, spouseX, node.y);
+                this.drawCard(mainGroup, rightPerson, spouseX, node.y);
+                
+                // ✅ Vẽ đường nối vợ chồng cho chế độ xem toàn bộ
+                this.drawSpouseConnection(mainGroup, node.x, spouseX, node.y);
             }
         });
         
@@ -1161,8 +1549,18 @@ renderMultipleTrees(trees) {
     
     console.log(`✅ Hoàn thành vẽ ${trees.length} cây - Kích thước: ${totalWidth}x${totalHeight}`);
     
-    // Apply transform
-    this.applyTransform();
+    // ✅ Căn giữa: Nếu có target (đang tìm kiếm) thì zoom vào target, ngược lại zoom toàn bộ
+    const hasTarget = this.targetPersonId && this.nodesToRender.some(n => 
+        (n.person && n.person.id == this.targetPersonId) || 
+        (n.spouse && n.spouse.id == this.targetPersonId)
+    );
+    
+    if (hasTarget) {
+        console.log('🎯 Zoom vào target:', this.targetPersonId);
+        this.centerOnTarget();
+    } else {
+        this.centerContent();
+    }
 }
 
 /**
@@ -1243,16 +1641,54 @@ drawTree(tree, startX, startY) {
     
     drawNode(tree, 0, 0, 1);
 }
-// REPLACE toàn bộ hàm exportPDF bằng:
 async exportPDF() {
-    this.showNotification('📄 Đang tạo file PDF...');
+    this.showNotification('📄 Đang xử lý hình ảnh và tạo PDF...');
 
     try {
         const svg = this.svg;
         const mainGroup = svg.querySelector('#mainGroup');
         if (!mainGroup) throw new Error("Không tìm thấy dữ liệu cây");
 
-        // 1. Lấy kích thước sơ đồ
+        // 1. Clone node để xử lý mà không ảnh hưởng UI chính
+        const clonedGroup = mainGroup.cloneNode(true);
+        
+        // 2. Xử lý hình ảnh: Chuyển href sang Base64 để hiển thị trong PDF
+        const images = clonedGroup.querySelectorAll('image');
+        const urlMap = new Map();
+        
+        // Gom tất cả URL cần tải
+        images.forEach(img => {
+            const href = img.getAttribute('href');
+            if (href) urlMap.set(href, null);
+        });
+
+        // Tải song song
+        const promises = [];
+        for (const url of urlMap.keys()) {
+            promises.push(
+                this.imageToDataURL(url)
+                    .then(base64 => urlMap.set(url, base64))
+                    .catch(err => {
+                        console.warn(`Không thể tải ảnh ${url}:`, err);
+                        // Nếu lỗi thì giữ nguyên hoặc dùng ảnh mặc định
+                    })
+            );
+        }
+        await Promise.all(promises);
+
+        // Thay thế href trong clone
+        images.forEach(img => {
+            const href = img.getAttribute('href');
+            const base64 = urlMap.get(href);
+            if (base64) {
+                img.setAttribute('href', base64);
+            } else {
+                // Nếu không tải được ảnh, xóa href để tránh lỗi
+                img.setAttribute('href', '');
+            }
+        });
+
+        // 3. Lấy kích thước sơ đồ
         const vbAttr = svg.getAttribute('viewBox');
         let w = 1200, h = 800;
         if (vbAttr) {
@@ -1261,27 +1697,23 @@ async exportPDF() {
             h = parts[3] || 800;
         }
 
-        // 2. TẠO CHUỖI SVG SẠCH (Không clone để tránh lỗi thuộc tính lạ)
-        // Chúng ta chỉ lấy phần nội dung đồ họa bên trong mainGroup
-        let content = mainGroup.innerHTML;
-
-        // Loại bỏ các thẻ gây lỗi parse
-        content = content.replace(/<image[^>]*>|<\/image>/g, ''); // Xóa sạch thẻ image
-        content = content.replace(/clip-path="url\([^)]*\)"/g, ''); // Xóa thuộc tính clip-path
-
-        // Bọc vào một thẻ SVG hoàn chỉnh với namespace chuẩn
+        // 4. Serialize SVG
+        const serializer = new XMLSerializer();
+        let content = serializer.serializeToString(clonedGroup);
+        
+        // Bọc vào một thẻ SVG hoàn chỉnh
         const cleanSvgStr = `
             <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
                 <rect width="100%" height="100%" fill="white"/>
-                <g>${content}</g>
+                ${content}
             </svg>
         `.trim();
 
-        // 3. Chuyển đổi sang Base64
+        // 5. Chuyển đổi sang Base64
         const base64Svg = window.btoa(unescape(encodeURIComponent(cleanSvgStr)));
         const dataUrl = 'data:image/svg+xml;base64,' + base64Svg;
 
-        // 4. Vẽ lên Canvas
+        // 6. Vẽ lên Canvas
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
@@ -1296,7 +1728,7 @@ async exportPDF() {
 
         ctx.drawImage(imgEl, 0, 0);
 
-        // 5. Xuất PDF bằng jsPDF
+        // 7. Xuất PDF bằng jsPDF
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({
             orientation: w > h ? 'l' : 'p',
@@ -1348,4 +1780,3 @@ async exportPDF() {
 
 // Export global
 window.FamilyTreeRenderer = FamilyTreeRenderer;
-

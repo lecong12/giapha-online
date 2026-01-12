@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gia Phả Online - Quản lý gia đình hiện đại</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../style/style.css">
+    <link rel="stylesheet" href="/style/style.css">
 </head>
 <body class="auth-page">
     <div class="background-animation">
@@ -26,21 +26,21 @@
             </div>
 
             <!-- LOGIN FORM -->
-            <form id="loginForm" class="auth-form">
+            <form id="loginForm" class="auth-form" onsubmit="event.preventDefault(); handleLogin();">
                 <div class="form-group">
                     <label>Đăng nhập với vai trò:</label>
-                    <select id="loginRole" required>
+                    <select id="loginRole" required onchange="toggleLoginFields()">
                         <option value="owner">Admin</option>
                         <option value="viewer">Viewer</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="viewerCodeGroup" style="display: none;">
                     <label><i class="fas fa-code"></i> Viewer Code </label>
-                    <input type="text" id="viewercode" name="viewer_code">
+                    <input type="text" id="viewerCode" name="viewer_code">
                 </div>
-                <div class="form-group">
-                    <label><i class="fas fa-user"></i> Email</label>
-                    <input type="text" id="loginUsername" name="email" placeholder="Email only for admin" required>
+                <div class="form-group" id="emailGroup">
+                    <label><i class="fas fa-user"></i> Tên đăng nhập / Email</label>
+                    <input type="text" id="loginUsername" name="email" placeholder="Nhập tên đăng nhập (ví dụ: admin)" required>
                 </div>
                 <div class="form-group password-group">
     <label><i class="fas fa-lock"></i> Mật khẩu <span id="passwordLabel">(Admin/Viewer)</span></label>
@@ -50,7 +50,7 @@
                     </button>
                 </div>
                 <p class="error-message" id="loginError"></p>
-                <button type="submit" class="btn-primary">
+                <button type="button" class="btn-primary" onclick="handleLogin()">
                     <span class="btn-text">Đăng Nhập</span>
                     <span class="btn-loader"><i class="fas fa-spinner fa-spin"></i></span>
                 </button>
@@ -87,29 +87,174 @@
                     <span class="btn-loader"><i class="fas fa-spinner fa-spin"></i></span>
                 </button>
             </form>
-<div id="viewerForm" class="auth-form" style="display: none;">
-    <h2>🔍 Đăng Nhập Viewer</h2>
-    <div class="form-group">
-        <label>Mã Viewer</label>
-        <input type="text" id="viewerCode" placeholder="Nhập mã 10 ký tự" required maxlength="15">
-    </div>
-    <div class="form-group">
-        <label>Mật Khẩu</label>
-        <div class="password-wrapper">
-            <input type="password" id="viewerPassword" placeholder="Nhập mật khẩu" required>
-            <button type="button" class="toggle-password" onclick="togglePassword('viewerPassword')">
-                <i class="fas fa-eye"></i>
-            </button>
-        </div>
-    </div>
-    <button class="btn-primary" onclick="handleLogin()">Đăng nhập</button>
-</div>
             <div class="auth-toggle">
                 <p id="toggleText">Chưa có tài khoản?</p>
                 <button type="button" id="toggleBtn" class="link-btn">Đăng Ký</button>
             </div>            
         </div>
     </div>
-    <script src="../components/auth.js" defer></script>
+    <script>
+        function toggleLoginFields() {
+            const role = document.getElementById('loginRole').value;
+            const viewerGroup = document.getElementById('viewerCodeGroup');
+            const emailGroup = document.getElementById('emailGroup');
+            const viewerInput = document.getElementById('viewerCode');
+            const emailInput = document.getElementById('loginUsername');
+
+            if (role === 'owner') {
+                // Chế độ Admin: Hiện Email, Ẩn Viewer Code
+                viewerGroup.style.display = 'none';
+                emailGroup.style.display = 'block';
+                emailInput.setAttribute('required', 'required');
+                viewerInput.removeAttribute('required');
+            } else {
+                // Chế độ Viewer: Ẩn Email, Hiện Viewer Code
+                viewerGroup.style.display = 'block';
+                emailGroup.style.display = 'none';
+                viewerInput.setAttribute('required', 'required');
+                emailInput.removeAttribute('required');
+            }
+        }
+        // Chạy ngay khi tải trang để đảm bảo trạng thái đúng
+        document.addEventListener('DOMContentLoaded', toggleLoginFields);
+
+        // Hàm ẩn/hiện mật khẩu
+        function togglePassword(fieldId) {
+            const input = document.getElementById(fieldId);
+            const icon = input.nextElementSibling.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // --- LOGIC ĐĂNG NHẬP & ĐĂNG KÝ (MỚI) ---
+        
+        // 1. Xử lý Đăng Nhập
+        async function handleLogin() {
+            // SỬA LỖI: Chọn đúng nút có class .btn-primary thay vì nút đầu tiên (nút con mắt)
+            const btn = document.querySelector('#loginForm .btn-primary');
+            const errorMsg = document.getElementById('loginError');
+            const role = document.getElementById('loginRole').value;
+            
+            // Lấy username tùy theo vai trò (Admin dùng Email/Username, Viewer dùng Code)
+            let username = '';
+            if (role === 'owner') {
+                username = document.getElementById('loginUsername').value.trim();
+            } else {
+                username = document.getElementById('viewerCode').value.trim();
+            }
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                errorMsg.textContent = "Vui lòng nhập đầy đủ thông tin.";
+                return;
+            }
+
+            // Hiệu ứng loading
+            btn.disabled = true;
+            errorMsg.textContent = "";
+            console.log("Đang gửi yêu cầu đăng nhập...", { username, role });
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Lưu thông tin user vào localStorage để dùng ở các trang sau
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    // ✅ FIX LỖI: Lưu thêm authToken để tương thích với các script kiểm tra bảo mật cũ
+                    localStorage.setItem('authToken', `id_${data.user._id || data.user.id}`);
+                    console.log("Đăng nhập thành công, đang chuyển hướng...");
+                    // Chuyển hướng vào Dashboard
+                    window.location.href = '/dashboard';
+                } else {
+                    if (data.error && data.error.includes('/api/seed')) {
+                        errorMsg.innerHTML = `⚠️ Chưa có dữ liệu. <a href="/api/seed" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: bold;">Bấm vào đây để tạo Admin</a>, sau đó thử lại.`;
+                    } else {
+                        errorMsg.textContent = data.error || "Đăng nhập thất bại";
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                errorMsg.textContent = "Lỗi kết nối server.";
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 2. Xử lý Đăng Ký (Cho form đăng ký ẩn)
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const full_name = document.getElementById('registerFullname').value;
+                const username = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirm = document.getElementById('registerConfirmPassword').value;
+                const msg = document.getElementById('registerError');
+
+                if (password !== confirm) {
+                    msg.textContent = "Mật khẩu nhập lại không khớp.";
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, full_name })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert("Đăng ký thành công! Vui lòng đăng nhập.");
+                        window.location.reload();
+                    } else {
+                        msg.textContent = data.error;
+                    }
+                } catch (err) {
+                    msg.textContent = "Lỗi kết nối.";
+                }
+            });
+        }
+
+        // Xử lý nút chuyển đổi Đăng nhập / Đăng ký
+        const toggleBtn = document.getElementById('toggleBtn');
+        const loginForm = document.getElementById('loginForm');
+        const toggleText = document.getElementById('toggleText');
+        
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const isLogin = !loginForm.classList.contains('hidden');
+                if (isLogin) {
+                    // Chuyển sang Đăng ký
+                    loginForm.classList.add('hidden');
+                    registerForm.classList.remove('hidden');
+                    toggleText.textContent = "Đã có tài khoản?";
+                    toggleBtn.textContent = "Đăng Nhập";
+                    document.querySelector('.auth-title').textContent = "Đăng Ký Admin";
+                } else {
+                    // Chuyển về Đăng nhập
+                    loginForm.classList.remove('hidden');
+                    registerForm.classList.add('hidden');
+                    toggleText.textContent = "Chưa có tài khoản?";
+                    toggleBtn.textContent = "Đăng Ký";
+                    document.querySelector('.auth-title').textContent = "Gia Phả Online";
+                }
+            });
+        }
+    </script>
+    <!-- Chỉ giữ lại một đường dẫn chuẩn nhất -->
+    <!-- <script src="/components/auth.js" defer></script> -->
 </body>
 </html>

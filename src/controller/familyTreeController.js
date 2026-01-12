@@ -1,99 +1,89 @@
 // src/controller/familyTreeController.js
-const { checkAuth } = require('../middleware/auth');
-
-function getDb(req) {
-  return req.app.get('db');
-}
+const mongoose = require('mongoose');
+const Person = mongoose.model('Person');
+const User = mongoose.model('User');
 
 /**
  * API lấy dữ liệu cây gia phả
  * Hỗ trợ cả owner và viewer
  */
-function getFamilyTreeData(req, res) {
-  const db = getDb(req);
+async function getFamilyTreeData(req, res) {
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  // Xác định ownerId
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) {
+        return res.status(403).json({ success: false, message: 'Không tìm thấy owner' });
       }
-      
-      fetchFamilyTreeData(db, row.owner_id, res);
-    });
-  } else {
-    fetchFamilyTreeData(db, userId, res);
-  }
-}
-
-/**
- * Helper function fetch data
- */
-function fetchFamilyTreeData(db, ownerId, res) {
-  // 1. Lấy tất cả people
-const sqlPeople = `
-  SELECT 
-    id, full_name, gender, birth_date, death_date, is_alive,
-    generation, avatar, biography, notes, member_type
-  FROM people
-  WHERE owner_id = ?
-  ORDER BY generation ASC, id ASC
-`;
-
-  db.all(sqlPeople, [ownerId], (err, people) => {
-    if (err) {
-      console.error('Lỗi lấy people:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
+      ownerId = viewer.owner_id;
     }
 
-    // 2. Lấy relationships
-    const sqlRel = `
-      SELECT 
-        r.id, r.parent_id, r.child_id, r.relation_type
-      FROM relationships r
-      INNER JOIN people p ON r.child_id = p.id
-      WHERE p.owner_id = ?
-    `;
+    // Lấy toàn bộ thành viên
+    const rawMembers = await Person.find({ owner_id: ownerId }).sort({ generation: 1 }).lean();
 
-    db.all(sqlRel, [ownerId], (err2, relationships) => {
-      if (err2) {
-        console.error('Lỗi lấy relationships:', err2.message);
-        return res.status(500).json({ success: false, message: 'Lỗi server' });
-      }
-
-      // 3. Lấy marriages
-      const sqlMar = `
-        SELECT 
-          m.id, m.husband_id, m.wife_id, 
-          m.marriage_date, m.divorce_date, m.notes
-        FROM marriages m
-        INNER JOIN people p1 ON m.husband_id = p1.id
-        WHERE p1.owner_id = ?
-      `;
-
-      db.all(sqlMar, [ownerId], (err3, marriages) => {
-        if (err3) {
-          console.error('Lỗi lấy marriages:', err3.message);
-          return res.status(500).json({ success: false, message: 'Lỗi server' });
-        }
-
-        // ✅ RETURN DỮ LIỆU
-        return res.json({
-          success: true,
-          data: {
-            people,
-            relationships,
-            marriages
-          }
-        });
-      });
+    // 1. Chuẩn hóa danh sách People (Map _id -> id)
+    const people = rawMembers.map(m => {
+        const genderNormalized = (m.gender || 'Unknown').toLowerCase();
+        const isFemale = ['nữ', 'female', 'nu'].includes(genderNormalized);
+        
+        return {
+            ...m,
+            id: m._id.toString(), // Chuyển ObjectId sang string
+            spouse_id: m.spouse_id ? m.spouse_id.toString() : null,
+            spouses: m.spouse_id ? [m.spouse_id.toString()] : [],
+            full_name: m.full_name || 'Không tên',
+            gender: m.gender || 'Unknown',
+            is_female: isFemale,
+            generation: m.generation || 1
+        };
     });
-  });
+
+    const peopleIds = new Set(people.map(p => p.id));
+
+    // 2. Tạo danh sách Relationships (Cha -> Con)
+    const relationships = [];
+    people.forEach(p => {
+        if (p.parent_id) {
+            const parentIdStr = p.parent_id.toString();
+            if (peopleIds.has(parentIdStr)) {
+                relationships.push({
+                    id: `rel_${parentIdStr}_${p.id}`,
+                    parent_id: parentIdStr,
+                    child_id: p.id
+                });
+            }
+        }
+    });
+
+    // 3. Tạo danh sách Marriages (Vợ chồng)
+    const marriages = [];
+    const processedSpouses = new Set();
+
+    people.forEach(p => {
+        if (p.spouse_id && peopleIds.has(p.spouse_id)) {
+            const sId = p.spouse_id;
+            const pId = p.id;
+            const key = [pId, sId].sort().join('_');
+            
+            if (!processedSpouses.has(key)) {
+                processedSpouses.add(key);
+                let husband_id = p.is_female ? sId : pId;
+                let wife_id = p.is_female ? pId : sId;
+                
+                marriages.push({ id: `mar_${key}`, husband_id, wife_id });
+            }
+        }
+    });
+
+    return res.json({ success: true, data: { people, relationships, marriages } });
+
+  } catch (err) {
+    console.error("Lỗi lấy cây gia phả:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 }
 
 module.exports = {

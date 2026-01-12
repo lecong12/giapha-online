@@ -1,150 +1,89 @@
 // src/controller/membersController.js
+const mongoose = require('mongoose');
+const Person = mongoose.model('Person');
+const User = mongoose.model('User');
 const { logActivity } = require('../utils/activityLogger');
-
-function getDb(req) {
-  return req.app.get('db');
-}
 
 /* ============================================================
    1. LẤY TẤT CẢ THÀNH VIÊN
 ============================================================ */
-function getAllMembers(req, res) {
-  const db = getDb(req);
+async function getAllMembers(req, res) {
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) {
+        return res.status(403).json({ success: false, message: 'Không tìm thấy owner' });
       }
-      
-      fetchMembers(db, row.owner_id, res);
-    });
-  } else {
-    fetchMembers(db, userId, res);
-  }
-}
-
-function fetchMembers(db, ownerId, res) {
- const sql = `
-  SELECT id, full_name, gender, birth_date, death_date, is_alive,
-         avatar, biography, generation, notes, phone, job, address, member_type
-  FROM people
-  WHERE owner_id = ?
-  ORDER BY generation ASC, full_name ASC
-`;
-
-  db.all(sql, [ownerId], (err, rows) => {
-    if (err) {
-      console.error('Lỗi getAllMembers:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
+      ownerId = viewer.owner_id;
     }
 
-    return res.json({ success: true, members: rows });
-  });
+    const members = await Person.find({ owner_id: ownerId })
+      .sort({ generation: 1, full_name: 1 })
+      .populate('spouse_id', 'full_name') // Populate để lấy tên vợ/chồng
+      .lean();
+
+    // Map _id to id và xử lý spouse
+    const result = members.map(m => ({
+      id: m._id,
+      ...m,
+      spouse: m.spouse_id ? { id: m.spouse_id._id, full_name: m.spouse_id.full_name } : null
+    }));
+
+    return res.json({ success: true, members: result });
+  } catch (err) {
+    console.error('Lỗi getAllMembers:', err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 /* ============================================================
    2. LẤY CHI TIẾT 1 THÀNH VIÊN
 ============================================================ */
-function getMemberById(req, res) {
-  const db = getDb(req);
+async function getMemberById(req, res) {
   const userId = req.user.id;
   const userRole = req.user.role;
   const memberId = req.params.id;
 
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
-      }
-      
-      fetchMemberById(db, memberId, row.owner_id, res);
-    });
-  } else {
-    fetchMemberById(db, memberId, userId, res);
-  }
-}
-
-function fetchMemberById(db, memberId, ownerId, res) {
-  // ✅ Comment nằm NGOÀI chuỗi SQL
-  const sql = `
-    SELECT id, full_name, gender, birth_date, death_date, is_alive,
-           avatar, biography, generation, notes, phone, job, address, member_type
-    FROM people
-    WHERE id = ? AND owner_id = ?
-  `;
-
-  db.get(sql, [memberId, ownerId], (err, row) => {
-    if (err) {
-      console.error('Lỗi getMemberById:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) return res.status(403).json({ success: false, message: 'Lỗi quyền' });
+      ownerId = viewer.owner_id;
     }
 
-    if (!row) {
+    const member = await Person.findOne({ _id: memberId, owner_id: ownerId })
+      .populate('parent_id', 'full_name')
+      .populate('spouse_id', 'full_name')
+      .lean();
+
+    if (!member) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
     }
 
-    // Lấy thông tin cha/mẹ
-    const sqlParents = `
-      SELECT p.id, p.full_name
-      FROM people p
-      INNER JOIN relationships r ON r.parent_id = p.id
-      WHERE r.child_id = ?
-    `;
+    // Format lại dữ liệu cho frontend
+    const result = {
+      id: member._id,
+      ...member,
+      parents: member.parent_id ? [member.parent_id] : [], // Frontend mong đợi mảng parents
+      spouse: member.spouse_id ? { id: member.spouse_id._id, full_name: member.spouse_id.full_name } : null
+    };
 
-    db.all(sqlParents, [memberId], (err2, parents) => {
-      if (err2) {
-        console.error('Lỗi lấy cha/mẹ:', err2.message);
-        row.parents = [];
-      } else {
-        row.parents = parents;
-      }
-
-      // Lấy vợ/chồng
-      const sqlSpouse = `
-        SELECT 
-          CASE 
-            WHEN husband_id = ? THEN wife_id
-            WHEN wife_id = ? THEN husband_id
-          END as spouse_id,
-          CASE 
-            WHEN husband_id = ? THEN (SELECT full_name FROM people WHERE id = wife_id)
-            WHEN wife_id = ? THEN (SELECT full_name FROM people WHERE id = husband_id)
-          END as spouse_name
-        FROM marriages
-        WHERE husband_id = ? OR wife_id = ?
-      `;
-
-      db.get(sqlSpouse, [memberId, memberId, memberId, memberId, memberId, memberId], (err3, spouse) => {
-        if (err3) {
-          console.error('Lỗi lấy vợ/chồng:', err3.message);
-          row.spouse = null;
-        } else {
-          row.spouse = spouse;
-        }
-
-        return res.json({ success: true, member: row });
-      });
-    });
-  });
+    return res.json({ success: true, member: result });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 /* ============================================================
    3. THÊM THÀNH VIÊN MỚI
 ============================================================ */
-/* ============================================================
-   3. THÊM THÀNH VIÊN MỚI - CÓ VALIDATE THẾ HỆ
-============================================================ */
-function createMember(req, res) {
-  const db = getDb(req);
+async function createMember(req, res) {
   const ownerId = req.user.id;
   const userId = req.user.id;
   const userRole = req.user.role;
@@ -153,478 +92,184 @@ function createMember(req, res) {
     full_name, gender, birth_date, death_date,
     avatar, biography, generation, notes,
     phone, job, address, parent_id, spouse_id,
-    member_type // ✅ THÊM FIELD MỚI
+    member_type
   } = req.body;
 
-  // ✅ VALIDATE CƠ BẢN
-  if (!full_name || !full_name.trim()) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Họ tên không được để trống' 
-    });
-  }
-  // ✅ Xử lý birth_date = null hoặc 'unknown'
-if (birth_date === '') birth_date = 'unknown';
+  if (!full_name) return res.status(400).json({ success: false, message: 'Thiếu họ tên' });
 
-// ✅ Xử lý death_date
-if (death_date === '') death_date = null;
+  try {
+    // Xử lý dữ liệu
+    const cleanBirth = (birth_date === 'unknown' || !birth_date) ? null : birth_date;
+    const cleanDeath = (death_date === 'unknown' || !death_date) ? null : death_date;
+    const is_alive = req.body.is_alive !== undefined ? req.body.is_alive : (cleanDeath ? 0 : 1);
 
-// ✅ Tính is_alive
-let is_alive;
-if (req.body.is_alive !== undefined) {
-  // Frontend đã gửi is_alive rõ ràng
-  is_alive = req.body.is_alive ? 1 : 0;
-} else {
-  // Tự động tính: có death_date → đã mất
-  is_alive = (death_date && death_date !== 'unknown') ? 0 : 1;
-}
-
-  if (gender && !['Nam', 'Nữ'].includes(gender)) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Giới tính phải là Nam hoặc Nữ' 
-    });
-  }
-
-  // ✅ LOGIC XỬ LÝ GENERATION
-  const requestedGeneration = parseInt(generation) || null;
-
-  // TRƯỜNG HỢP 1: Thủy tổ (generation = 1)
-  if (requestedGeneration === 1) {
+    // Logic tính thế hệ (nếu chưa có)
+    let finalGen = parseInt(generation) || 1;
+    
     if (parent_id) {
-      return res.status(400).json({
-        success: false,
-        message: '⚠️ Thủy tổ (đời 1) không được có cha/mẹ'
-      });
+      const parent = await Person.findById(parent_id);
+      if (parent) finalGen = parent.generation + 1;
+    } else if (spouse_id) {
+      const spouse = await Person.findById(spouse_id);
+      if (spouse) finalGen = spouse.generation;
     }
 
-    // Insert thủy tổ (có thể có hoặc không có vợ/chồng)
-    insertMemberWithGeneration(db, {
-      ownerId, userId, userRole,
-      full_name, gender, birth_date, death_date,
+    // Tạo member mới
+    const newMember = await Person.create({
+      owner_id: ownerId,
+      full_name,
+      gender: gender || 'Nam',
+      birth_date: cleanBirth,
+      death_date: cleanDeath,
+      is_alive: is_alive,
       avatar, biography, notes, phone, job, address,
-      generation: 1,
-      parent_id: null,
-      spouse_id,
-      member_type: 'blood' // Thủy tổ luôn là blood
-    }, res);
-    return;
-  }
-
-  // TRƯỜNG HỢP 2: Thế hệ > 1
-  
-  // Phải có ít nhất 1 trong 2: parent_id HOẶC spouse_id
-  if (!parent_id && !spouse_id) {
-    return res.status(400).json({
-      success: false,
-      message: '⚠️ Thành viên đời > 1 phải có cha/mẹ (con ruột) hoặc vợ/chồng (con dâu/rễ)'
-    });
-  }
-
-  // SUB-CASE 2A: CÓ CHA/MẸ → Con ruột (ưu tiên)
-  if (parent_id) {
-    db.get(
-      `SELECT generation FROM people WHERE id = ? AND owner_id = ?`,
-      [parent_id, ownerId],
-      (err, parent) => {
-        if (err || !parent) {
-          return res.status(400).json({
-            success: false,
-            message: '❌ Không tìm thấy thông tin cha/mẹ'
-          });
-        }
-
-        const calculatedGeneration = parent.generation + 1;
-
-        // Kiểm tra generation nhập vào có khớp không
-        if (requestedGeneration && requestedGeneration !== calculatedGeneration) {
-          return res.status(400).json({
-            success: false,
-            message: `⚠️ Thế hệ tự động tính là ${calculatedGeneration} (cha/mẹ là đời ${parent.generation})`
-          });
-        }
-
-        // Insert con ruột
-        insertMemberWithGeneration(db, {
-          ownerId, userId, userRole,
-          full_name, gender, birth_date, death_date,
-          avatar, biography, notes, phone, job, address,
-          generation: calculatedGeneration,
-          parent_id,
-          spouse_id,
-          member_type: 'blood' // ✅ Con ruột
-        }, res);
-      }
-    );
-  }
-  // SUB-CASE 2B: KHÔNG CÓ CHA/MẸ, CHỈ CÓ VỢ/CHỒNG → Con dâu/rễ
-  else if (spouse_id) {
-    db.get(
-      `SELECT generation FROM people WHERE id = ? AND owner_id = ?`,
-      [spouse_id, ownerId],
-      (err, spouse) => {
-        if (err || !spouse) {
-          return res.status(400).json({
-            success: false,
-            message: '❌ Không tìm thấy thông tin vợ/chồng'
-          });
-        }
-
-        const spouseGeneration = spouse.generation;
-
-        // Kiểm tra generation nhập vào có khớp không
-        if (requestedGeneration && requestedGeneration !== spouseGeneration) {
-          return res.status(400).json({
-            success: false,
-            message: `⚠️ Thế hệ phải bằng thế hệ của vợ/chồng (đời ${spouseGeneration})`
-          });
-        }
-
-        // Insert con dâu/rễ
-        insertMemberWithGeneration(db, {
-          ownerId, userId, userRole,
-          full_name, gender, birth_date, death_date,
-          avatar, biography, notes, phone, job, address,
-          generation: spouseGeneration,
-          parent_id: null,
-          spouse_id,
-          member_type: 'in_law' // ✅ Con dâu/rễ
-        }, res);
-      }
-    );
-  }
-}
-
-// ✅ HÀM HELPER INSERT MEMBER
-function insertMemberWithGeneration(db, data, res) {
-  const {
-    ownerId, userId, userRole,
-    full_name, gender, birth_date, death_date,
-    avatar, biography, notes, phone, job, address,
-    generation, parent_id, spouse_id, member_type
-  } = data;
-
- // ✅ XỬ LÝ LOGIC TRƯỚC KHI INSERT
-  const cleanGender = gender || null;
-  const cleanBirthDate = (birth_date === 'unknown' || !birth_date) ? null : birth_date;
-  const cleanDeathDate = (death_date === 'unknown' || !death_date) ? null : death_date;
-  const is_alive = data.is_alive !== undefined ? data.is_alive : (cleanDeathDate ? 0 : 1);
-
-  const typeText = member_type === 'in_law' ? 'Con dâu/rể' : 'Con ruột';
-
-  // ✅ SQL SẠCH, CHỈ CÓ PLACEHOLDER
-  const sql = `
-    INSERT INTO people (
-      owner_id, full_name, gender, 
-      birth_date, death_date, is_alive,
-      avatar, biography, generation, notes, phone, job, address, member_type
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.run(sql, [
-    ownerId, full_name, gender || null, birth_date || null, death_date || null, is_alive,
-    avatar || null, biography || null, generation || null, notes || null,
-    phone || null, job || null, address || null, member_type 
-  ], function(err) {
-    if (err) {
-      console.error('Lỗi createMember:', err.message);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Lỗi tạo thành viên' 
-      });
-    }
-
-    const newId = this.lastID;
-
-    // Lấy tên user trước khi log
-    db.get(`SELECT full_name FROM users WHERE id = ?`, [userId], (errUser, user) => {
-      const actorName = user ? user.full_name : (userRole === 'owner' ? 'Admin' : 'Viewer');
-
-      // Xác định type text
-     
-
-      // LOG HOẠT ĐỘNG
-      logActivity(db, {
-        owner_id: ownerId,
-        actor_id: userId,
-        actor_role: userRole,
-        actor_name: actorName,
-        action_type: 'create',
-        entity_type: 'member',
-        entity_name: full_name,
-        description: `Đã thêm ${typeText}: ${full_name} (Đời ${generation || 'N/A'})`
-      });
+      generation: finalGen,
+      parent_id: parent_id || null,
+      spouse_id: spouse_id || null,
+      member_type: member_type || 'blood'
     });
 
-    // Thêm quan hệ cha/mẹ nếu có
-    if (parent_id) {
-      const sqlRel = `INSERT INTO relationships (parent_id, child_id, relation_type) VALUES (?, ?, 'ruot')`;
-      db.run(sqlRel, [parent_id, newId], (errRel) => {
-        if (errRel) console.error('Lỗi thêm quan hệ:', errRel.message);
-      });
-    }
-
-    // Thêm hôn nhân nếu có
+    // Cập nhật quan hệ vợ chồng (2 chiều)
     if (spouse_id) {
-      db.get(`SELECT gender FROM people WHERE id = ?`, [newId], (errG, personRow) => {
-        if (!errG && personRow) {
-          let sqlMarriage = '';
-          if (personRow.gender === 'Nam') {
-            sqlMarriage = `INSERT INTO marriages (husband_id, wife_id) VALUES (?, ?)`;
-            db.run(sqlMarriage, [newId, spouse_id]);
-          } else {
-            sqlMarriage = `INSERT INTO marriages (husband_id, wife_id) VALUES (?, ?)`;
-            db.run(sqlMarriage, [spouse_id, newId]);
-          }
-        }
-      });
+      await Person.findByIdAndUpdate(spouse_id, { spouse_id: newMember._id });
     }
 
-    return res.json({ 
-      success: true, 
-      message: `✅ Tạo thành viên thành công (${typeText}, Đời ${generation})`, 
-      memberId: newId 
+    // Log hoạt động
+    const user = await User.findById(userId);
+    const actorName = user ? user.full_name : 'Admin';
+    
+    await logActivity(null, {
+      owner_id: ownerId,
+      actor_id: userId,
+      actor_role: userRole,
+      actor_name: actorName,
+      action_type: 'create',
+      entity_type: 'member',
+      entity_name: full_name,
+      description: `Đã thêm thành viên: ${full_name} (Đời ${finalGen})`
     });
-  });
+
+    return res.json({ success: true, message: 'Tạo thành công', memberId: newMember._id });
+  } catch (err) {
+    console.error('Lỗi createMember:', err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
+
 /* ============================================================
-   4. SỬA THÔNG TIN THÀNH VIÊN
+   4. SỬA THÀNH VIÊN
 ============================================================ */
-/* ============================================================
-   4. SỬA THÔNG TIN THÀNH VIÊN - THÊM VALIDATION
-============================================================ */
-function updateMember(req, res) {
-  const db = getDb(req);
+async function updateMember(req, res) {
   const ownerId = req.user.id;
   const userId = req.user.id;
-  const userRole = req.user.role;
   const memberId = req.params.id;
+  const { full_name, gender, birth_date, death_date, is_alive, avatar, biography, notes, phone, job, address } = req.body;
 
-  const {
-    full_name, gender, birth_date, death_date,
-    avatar, biography, generation, notes,
-    phone, job, address
-  } = req.body;
+  try {
+    const member = await Person.findOne({ _id: memberId, owner_id: ownerId });
+    if (!member) return res.status(404).json({ success: false, message: 'Không tìm thấy' });
 
-  // Validate
-  if (!full_name || !full_name.trim()) {
-    return res.status(400).json({ success: false, message: 'Họ tên không được để trống' });
-  }
+    // Update fields
+    member.full_name = full_name || member.full_name;
+    member.gender = gender || member.gender;
+    member.birth_date = (birth_date === 'unknown' || !birth_date) ? null : birth_date;
+    member.death_date = (death_date === 'unknown' || !death_date) ? null : death_date;
+    member.is_alive = is_alive !== undefined ? is_alive : member.is_alive;
+    member.avatar = avatar || member.avatar;
+    member.biography = biography || member.biography;
+    member.notes = notes || member.notes;
+    member.phone = phone || member.phone;
+    member.job = job || member.job;
+    member.address = address || member.address;
 
-  if (gender && !['Nam', 'Nữ'].includes(gender)) {
-    return res.status(400).json({ success: false, message: 'Giới tính phải là Nam hoặc Nữ' });
-  }
+    await member.save();
 
-  // ✅ THÊM: Kiểm tra không cho thay đổi generation khi update
-  // (Vì logic phức tạp - nếu đổi generation phải đổi cả con cháu)
-  db.get(`SELECT generation FROM people WHERE id = ? AND owner_id = ?`, [memberId, ownerId], (err, currentMember) => {
-    if (err || !currentMember) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
-    }
-
-    // Nếu generation bị thay đổi → báo lỗi
-    if (generation && parseInt(generation) !== currentMember.generation) {
-      return res.status(400).json({ 
-        success: false, 
-        message: '⚠️ Không thể thay đổi thế hệ sau khi đã tạo. Hãy xóa và tạo lại nếu cần.' 
-      });
-    }
-
-    const is_alive = death_date ? 0 : 1;
-
-    const sql = `
-      UPDATE people SET
-        full_name = ?, gender = ?, birth_date = ?, death_date = ?, is_alive = ?,
-        avatar = ?, biography = ?, generation = ?, notes = ?,
-        phone = ?, job = ?, address = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND owner_id = ?
-    `;
-
-    db.run(sql, [
-      full_name, gender || null, birth_date || null, death_date || null, is_alive,
-      avatar || null, biography || null, currentMember.generation, notes || null, // ← Dùng generation cũ
-      phone || null, job || null, address || null,
-      memberId, ownerId
-    ], function(errUpdate) {
-      if (errUpdate) {
-        console.error('Lỗi updateMember:', errUpdate.message);
-        return res.status(500).json({ success: false, message: 'Lỗi cập nhật thành viên' });
-      }
-
-      db.get(`SELECT full_name FROM users WHERE id = ?`, [userId], (errUser, user) => {
-        const actorName = user ? user.full_name : (userRole === 'owner' ? 'Admin' : 'Viewer');
-
-        logActivity(db, {
-          owner_id: ownerId,
-          actor_id: userId,
-          actor_role: userRole,
-          actor_name: actorName,
-          action_type: 'update',
-          entity_type: 'member',
-          entity_name: full_name,
-          description: `Đã cập nhật thông tin: ${full_name}`
-        });
-      });
-
-      return res.json({ success: true, message: 'Cập nhật thành công' });
+    // Log
+    const user = await User.findById(userId);
+    await logActivity(null, {
+      owner_id: ownerId,
+      actor_id: userId,
+      actor_role: req.user.role,
+      actor_name: user ? user.full_name : 'Admin',
+      action_type: 'update',
+      entity_type: 'member',
+      entity_name: full_name,
+      description: `Đã cập nhật: ${full_name}`
     });
-  });
+
+    return res.json({ success: true, message: 'Cập nhật thành công' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
+
 /* ============================================================
-   5. XÓA THÀNH VIÊN - ✅ FIXED
+   5. XÓA THÀNH VIÊN
 ============================================================ */
-function deleteMember(req, res) {
-  const db = getDb(req);
+async function deleteMember(req, res) {
   const ownerId = req.user.id;
   const userId = req.user.id;
-  const userRole = req.user.role;
   const memberId = req.params.id;
 
-  // ✅ BƯỚC 1: Lấy tên member VÀ user trước
-  db.get(`SELECT full_name FROM people WHERE id = ? AND owner_id = ?`, [memberId, ownerId], (errGet, member) => {
-    if (errGet || !member) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
-    }
+  try {
+    const member = await Person.findOne({ _id: memberId, owner_id: ownerId });
+    if (!member) return res.status(404).json({ success: false, message: 'Không tìm thấy' });
 
     const memberName = member.full_name;
 
-    // ✅ BƯỚC 2: Lấy tên user
-    db.get(`SELECT full_name FROM users WHERE id = ?`, [userId], (errUser, user) => {
-      const actorName = user ? user.full_name : (userRole === 'owner' ? 'Admin' : 'Viewer');
+    // Xóa quan hệ: Set parent_id của con cái về null
+    await Person.updateMany({ parent_id: memberId }, { parent_id: null });
+    
+    // Xóa quan hệ: Set spouse_id của vợ/chồng về null
+    await Person.updateMany({ spouse_id: memberId }, { spouse_id: null });
 
-      // ✅ BƯỚC 3: Xóa các mối quan hệ
-      db.run(`DELETE FROM relationships WHERE parent_id = ? OR child_id = ?`, [memberId, memberId], (errRel) => {
-        if (errRel) console.error('Lỗi xóa relationships:', errRel.message);
-      });
+    // Xóa người
+    await Person.findByIdAndDelete(memberId);
 
-      db.run(`DELETE FROM marriages WHERE husband_id = ? OR wife_id = ?`, [memberId, memberId], (errMar) => {
-        if (errMar) console.error('Lỗi xóa marriages:', errMar.message);
-      });
-
-      // ✅ BƯỚC 4: Xóa người
-      const sql = `DELETE FROM people WHERE id = ? AND owner_id = ?`;
-      db.run(sql, [memberId, ownerId], function(errDel) {
-        if (errDel) {
-          console.error('Lỗi deleteMember:', errDel.message);
-          return res.status(500).json({ success: false, message: 'Lỗi xóa thành viên' });
-        }
-
-        // ✅ BƯỚC 5: LOG (KHÔNG BLOCKING)
-        logActivity(db, {
-          owner_id: ownerId,
-          actor_id: userId,
-          actor_role: userRole,
-          actor_name: actorName, // ← ĐẢM BẢO KHÔNG NULL
-          action_type: 'delete',
-          entity_type: 'member',
-          entity_name: memberName,
-          description: `Đã xóa thành viên: ${memberName}`
-        });
-
-        // ✅ BƯỚC 6: RETURN (CHỈ 1 LẦN)
-        return res.json({ success: true, message: 'Xóa thành viên thành công' });
-      });
+    // Log
+    const user = await User.findById(userId);
+    await logActivity(null, {
+      owner_id: ownerId,
+      actor_id: userId,
+      actor_role: req.user.role,
+      actor_name: user ? user.full_name : 'Admin',
+      action_type: 'delete',
+      entity_type: 'member',
+      entity_name: memberName,
+      description: `Đã xóa thành viên: ${memberName}`
     });
-  });
+
+    return res.json({ success: true, message: 'Xóa thành công' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 /* ============================================================
-   6. TÌM KIẾM NÂNG CAO
+   6. TÌM KIẾM
 ============================================================ */
-function searchMembers(req, res) {
-  const db = getDb(req);
+async function searchMembers(req, res) {
   const userId = req.user.id;
-  const userRole = req.user.role;
+  const { name, generation, gender, status, job, address } = req.body;
 
-  const {
-    name, generation, gender, status, job, ageMin, ageMax, address
-  } = req.body;
+  try {
+    const query = { owner_id: userId };
+    if (name) query.full_name = { $regex: name, $options: 'i' };
+    if (generation) query.generation = generation;
+    if (gender && gender !== 'all') query.gender = gender === 'male' ? 'Nam' : 'Nữ';
+    if (status) query.is_alive = status === 'living';
+    if (job) query.job = { $regex: job, $options: 'i' };
+    if (address) query.address = { $regex: address, $options: 'i' };
 
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, row) => {
-      if (err || !row || !row.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
-      }
-      
-      performSearch(db, row.owner_id, req.body, res);
-    });
-  } else {
-    performSearch(db, userId, req.body, res);
+    const members = await Person.find(query).lean();
+    const result = members.map(m => ({ id: m._id, ...m }));
+
+    return res.json({ success: true, members: result, count: result.length });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Lỗi tìm kiếm' });
   }
-}
-
-function performSearch(db, ownerId, filters, res) {
-  const { name, generation, gender, status, job, ageMin, ageMax, address } = filters;
-
- let sql = `
-  SELECT id, full_name, gender, birth_date, death_date, is_alive,
-         avatar, biography, generation, notes, phone, job, address, member_type
-  FROM people
-  WHERE owner_id = ?
-`;
-
-  const params = [ownerId];
-
-  if (name) {
-    sql += ` AND full_name LIKE ?`;
-    params.push(`%${name}%`);
-  }
-
-  if (generation) {
-    sql += ` AND generation = ?`;
-    params.push(generation);
-  }
-
-  if (gender === 'male') {
-    sql += ` AND gender = 'Nam'`;
-  } else if (gender === 'female') {
-    sql += ` AND gender = 'Nữ'`;
-  }
-
-  if (status === 'living') {
-    sql += ` AND is_alive = 1`;
-  } else if (status === 'deceased') {
-    sql += ` AND is_alive = 0`;
-  }
-
-  if (job) {
-    sql += ` AND job LIKE ?`;
-    params.push(`%${job}%`);
-  }
-
-  if (address) {
-    sql += ` AND address LIKE ?`;
-    params.push(`%${address}%`);
-  }
-
-  db.all(sql, params, (err, rows) => {
-    if (err) {
-      console.error('Lỗi searchMembers:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi tìm kiếm' });
-    }
-
-    let results = rows;
-
-    if (ageMin || ageMax) {
-      const currentYear = new Date().getFullYear();
-      results = rows.filter(person => {
-        if (!person.birth_date) return false;
-        const birthYear = new Date(person.birth_date).getFullYear();
-        const age = currentYear - birthYear;
-
-        if (ageMin && age < parseInt(ageMin)) return false;
-        if (ageMax && age > parseInt(ageMax)) return false;
-
-        return true;
-      });
-    }
-
-    return res.json({ success: true, members: results, count: results.length });
-  });
 }
 
 module.exports = {

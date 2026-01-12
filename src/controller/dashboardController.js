@@ -1,148 +1,79 @@
 // src/controller/dashboardController.js
+const mongoose = require('mongoose');
+const Person = mongoose.model('Person');
+const User = mongoose.model('User');
+const Activity = mongoose.model('Activity');
 
-function getDb(req) {
-  return req.app.get('db');
-}
-
-function getDashboardStats(req, res) {
-  const db = getDb(req);
+async function getDashboardStats(req, res) {
   const userId = req.user.id;
   const userRole = req.user.role;
 
-  // Nếu là viewer, lấy owner_id của viewer
-  if (userRole === 'viewer') {
-    db.get(`SELECT owner_id FROM users WHERE id = ?`, [userId], (err, userRow) => {
-      if (err || !userRow || !userRow.owner_id) {
-        return res.status(403).json({ 
-          success: false, 
-          message: 'Không tìm thấy owner của viewer này' 
-        });
+  try {
+    let ownerId = userId;
+    if (userRole === 'viewer') {
+      const viewer = await User.findById(userId);
+      if (!viewer || !viewer.owner_id) {
+        return res.status(403).json({ success: false, message: 'Không tìm thấy owner' });
       }
-      
-      // Gọi hàm fetch stats với owner_id đúng
-      fetchDashboardStats(db, userRow.owner_id, res);
-    });
-    return;
-  }
-
-  // Owner xem stats của chính mình
-  fetchDashboardStats(db, userId, res);
-}
-
-// Hàm helper fetch stats
-function fetchDashboardStats(db, ownerId, res) {
-  const sqlSummary = `
-    SELECT
-      COUNT(*) AS total,
-      SUM(CASE WHEN gender = 'Nam' THEN 1 ELSE 0 END) AS males,
-      SUM(CASE WHEN gender = 'Nữ' THEN 1 ELSE 0 END) AS females,
-      MAX(generation) AS maxGeneration
-    FROM people
-    WHERE owner_id = ?;
-  `;
-
-  db.get(sqlSummary, [ownerId], (err, row) => {
-    if (err) {
-      console.error('Lỗi query tổng quan:', err.message);
-      return res.status(500).json({ success: false, message: 'Lỗi server' });
+      ownerId = viewer.owner_id;
     }
 
-    const total = row.total || 0;
-    const males = row.males || 0;
-    const females = row.females || 0;
-    const maxGeneration = row.maxGeneration || 0;
+    // 1. Counts
+    const total = await Person.countDocuments({ owner_id: ownerId });
+    const males = await Person.countDocuments({ owner_id: ownerId, gender: { $in: ['male', 'Nam'] } });
+    const females = await Person.countDocuments({ owner_id: ownerId, gender: { $in: ['female', 'Nữ'] } });
 
-    // Phân bố thế hệ
-    const sqlGen = `
-      SELECT generation, COUNT(*) AS count
-      FROM people
-      WHERE owner_id = ?
-      GROUP BY generation
-      ORDER BY generation ASC;
-    `;
+    // 2. Generations
+    const genStats = await Person.aggregate([
+        { $match: { owner_id: new mongoose.Types.ObjectId(ownerId) } },
+        { $group: { _id: "$generation", count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+    ]);
     
-    db.all(sqlGen, [ownerId], (err2, genRows) => {
-      if (err2) {
-        console.error('Lỗi query generations:', err2.message);
-        return res.status(500).json({ success: false, message: 'Lỗi server' });
+    const maxGeneration = genStats.length > 0 ? Math.max(...genStats.map(g => g._id || 0)) : 0;
+    const generations = genStats.map(g => ({ generation: g._id, count: g.count }));
+
+    // 3. Upcoming Birthdays
+    const aliveMembers = await Person.find({ 
+        owner_id: ownerId, 
+        is_alive: true, 
+        birth_date: { $ne: null } 
+    }).select('full_name birth_date');
+
+    const upcomingBirthdays = calcUpcomingBirthdays(aliveMembers, 45);
+
+    // 4. Upcoming Death Anniversaries
+    const deadMembers = await Person.find({ 
+        owner_id: ownerId, 
+        is_alive: false, 
+        death_date: { $ne: null } 
+    }).select('full_name death_date');
+
+    const upcomingDeathAnniversaries = calcUpcomingDeathAnniversaries(deadMembers, 45);
+
+    // 5. Activities
+    const activities = await Activity.find({ owner_id: ownerId })
+        .sort({ created_at: -1 })
+        .limit(10);
+
+    return res.json({
+      success: true,
+      stats: {
+        total,
+        males,
+        females,
+        maxGeneration,
+        generations,
+        upcomingBirthdays,
+        upcomingDeathAnniversaries,
+        activities
       }
-
-      const generations = genRows.map(r => ({
-        generation: r.generation,
-        count: r.count
-      }));
-
-      // Sinh nhật sắp tới
-      const sqlBirthday = `
-        SELECT id, full_name, birth_date
-        FROM people
-        WHERE owner_id = ?
-          AND is_alive = 1
-          AND birth_date IS NOT NULL
-          AND birth_date != ''
-      `;
-      
-      db.all(sqlBirthday, [ownerId], (err3, birthdayRows) => {
-        if (err3) {
-          console.error('Lỗi query birthdays:', err3.message);
-          return res.status(500).json({ success: false, message: 'Lỗi server' });
-        }
-
-        const upcomingBirthdays = calcUpcomingBirthdays(birthdayRows, 45);
-
-        // Query ngày giỗ
-        const sqlDeceased = `
-          SELECT id, full_name, birth_date, death_date, is_alive
-          FROM people
-          WHERE owner_id = ?
-            AND is_alive = 0
-            AND death_date IS NOT NULL
-            AND death_date != ''
-        `;
-        
-        db.all(sqlDeceased, [ownerId], (err4, deceasedRows) => {
-          if (err4) {
-            console.error('Lỗi query death anniversaries:', err4.message);
-            return res.status(500).json({ success: false, message: 'Lỗi server' });
-          }
-
-          const upcomingDeathAnniversaries = calcUpcomingDeathAnniversaries(deceasedRows, 45);
-
-          // Lấy activity logs
-          const sqlActivities = `
-            SELECT id, actor_name, actor_role, action_type, entity_type, 
-                   entity_name, description, created_at
-            FROM activity_logs
-            WHERE owner_id = ?
-            ORDER BY created_at DESC
-            LIMIT 10
-          `;
-
-          db.all(sqlActivities, [ownerId], (err5, activityRows) => {
-            if (err5) {
-              console.error('Lỗi query activities:', err5.message);
-              activityRows = [];
-            }
-
-            // RETURN TẤT CẢ DỮ LIỆU
-            return res.json({
-              success: true,
-              stats: {
-                total,
-                males,
-                females,
-                maxGeneration,
-                generations,
-                upcomingBirthdays,
-                upcomingDeathAnniversaries, // ← ĐÃ ĐƯỢC ĐỊNH NGHĨA
-                activities: activityRows
-              }
-            });
-          });
-        });
-      });
     });
-  });
+
+  } catch (err) {
+    console.error('Lỗi getDashboardStats:', err);
+    res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
 }
 
 // Tính sinh nhật sắp tới
@@ -155,6 +86,8 @@ function calcUpcomingBirthdays(rows, daysAhead) {
       if (!r.birth_date) return null;
 
       const birth = new Date(r.birth_date);
+      if (isNaN(birth.getTime())) return null;
+
       let next = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
 
       if (next < today) {
@@ -165,7 +98,7 @@ function calcUpcomingBirthdays(rows, daysAhead) {
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
       return {
-        id: r.id,
+        id: r._id,
         full_name: r.full_name,
         birthday: r.birth_date,
         daysLeft: diffDays,
@@ -186,6 +119,8 @@ function calcUpcomingDeathAnniversaries(rows, daysAhead) {
       if (!r.death_date) return null;
 
       const death = new Date(r.death_date);
+      if (isNaN(death.getTime())) return null;
+
       let next = new Date(today.getFullYear(), death.getMonth(), death.getDate());
 
       if (next < today) {
@@ -197,7 +132,7 @@ function calcUpcomingDeathAnniversaries(rows, daysAhead) {
       const yearsPassed = today.getFullYear() - death.getFullYear();
 
       return {
-        id: r.id,
+        id: r._id,
         full_name: r.full_name,
         death_date: r.death_date,
         daysLeft: diffDays,
