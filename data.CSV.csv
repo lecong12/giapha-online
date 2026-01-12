@@ -1,0 +1,770 @@
+full_name,gender,birth_date,death_date,generation,notes,phone,job,address,parent_name,spouse_name
+Hiển Cao Cao Cao Cao Lê Công Mao,Nam,,,1,,,,,,Hiển Cao Cao Cao Cao Tịnh bà
+Hiển Cao Cao Cao Lê Công Nên,Nam,,,2,,,,,Hiển Cao Cao Cao Cao Lê Công Mao,Hiển Cao Cao Cao Tổ Tỷ Bùi Thị Việt
+Hiển Cao Cao Tổ khảo Lê Công Hạnh,Nam,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,Hiển Cao Cao Tổ Tỷ Lê Thị Chít
+Hiển Cao Cao Tổ khảo Lê Công Xanh,Nam,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ khảo Lê Công Mãi,Nam,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ khảo Lê Công Tài,Nam,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ cô Lê Thị Súy,Nữ,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ cô Lê Thị Phúc,Nữ,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ cô Lê Thị Hay,Nữ,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ cô Lê Thị Cuộc,Nữ,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Cao Tổ khảo Lê hữu vị vô danh,Nữ,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Hiển Cao Tổ khảo Lê Công Thương,Nam,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,Hiển Cao Tổ tỷ Phạm Thị Thập
+Hiển Cao Tổ khảo Lê HVVD,,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,
+Hiển Cao Tổ cô Lê Thị Thuật,Nữ,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,
+Hiển Cao Tổ cô Lê Thị Thiệt,Nữ,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,
+Hiển Cao Tổ khảo Lê Công Tống,Nam,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,Hiển cao Tổ tỷ Lê Thị Thuộc
+Hiển Cao Tổ khảo Lê Công Hán,Nam,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,Hoàng Thị Văn
+Hiển Cao Tổ cô Lê Thị Linh,Nữ,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,
+Hiển Cao Tổ khảo Lê Công Ngạn,Nam,,,4,,,,,Hiển Cao Cao Tổ khảo Lê Công Hạnh,"Hiển Tẳng Tổ khảo tỷ Lê Thị Quý, Hiển cao Tổ khảo thiếp Nguyễn Thị  Cựu"
+Hiển Tẳng Tổ khảo Lê Công Minh,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Thương,
+Hiển Tẳng  Tổ khảo Lê Công Khi,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Thương,
+Hiển Tẳng  Tổ khảo Lê Công Chỉ,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Thương,
+Hiển Tẳng  Tổ cô Lê Thị Xa,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Thương,
+Hiển Tẳng  Tổ cô Lê Thị Triều,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Thương,
+Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,"Hiển Tẳng Tổ tỷ Lê Thị Hoan, Tùng tằng Tổ khảo thiếp Lê Thị Thúi"
+Hiển Tẳng Tổ cô Lê Thị Quý,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,
+Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,Hiển tẳng Tổ tỷ Lê Thị Phú
+Hiển Tẳng Tổ khảo Lê Công Lệ,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,
+Hiển Tẳng Tổ khảo Lê Công Lại-đầu Phái Ba,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,Hiển tằng tổ tỷ Lê Thị Chuông
+Hiển Tẳng Tổ khảo Lê Công Nghĩa,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,
+Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,"Nguyễn Thị Chuẩn, Nguyễn Thị Văn"
+Hiển Tẳng Tổ cô Lê Thị Nhi,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Tống,
+Hiển Tẳng Tổ khảo Lê Công Hồ,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Hán,Hiển tằng Tổ tỷ Nguyễn Thị Hạnh
+Hiển Tẳng Tổ khảo Lê Thị Hữu,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê Công Tình,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê HVVD,,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê Công Cẩn,Nam,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê Thị Lội,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê Thị Lựu,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê Thị Hợi,Nữ,,,5,,,,,Hiển Cao Tổ khảo Lê Công Ngạn,
+Lê Thị Yêm,Nữ,,,6,,,,,Hiển Tẳng Tổ cô Lê Thị Quý,
+Hiển Tổ khảo Lê Công Tính,Nam,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,"Nguyễn Thị Trưng, Tùng Tổ khảo kế thứ NguyễnThị Vy"
+Hiển Tẳng Tổ cô Lê Thị Toán,Nữ,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Hiển Tổ thúc khảo Lê Công Liệu,Nam,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,"Hiển Tổ thúc tỷ Lê Thị Thọ, Tùng tổ thúc thiếp Nguyễn Thị Tánh, Thứ thiếp Nguyễn Thị Lành"
+Hiển Tổ thúc Lê Công Đặc,Nam,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Hiển Tổ cô Lê Thị Tường,Nữ,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Hiển Tổ thúc khảo Lê Công Xuyên,Nam,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,"Hiển tổ thúc tỷ Bùi Thị Phúc, Thiếp Nguyễn Thị Khả"
+Hiển Tổ cố Lê Thị Hảo,Nữ,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Hiển Tổ thúc Lê Công Hề,Nam,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Lê Thị Đống,Nữ,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Hiển Tổ cô Lê Thị Bài,Nữ,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,
+Hiển tổ thúc khảo Lê Công Hành,Nam,,,6,,,,,Hiển Tẳng  Tổ khảo Lê Công Phú-đầu Phái Nhất,Hiển tổ thúc tỷ Nguyễn Thị Biện
+Hiển Tổ thúc khảo Lê Công Hộ,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,Hiển tổ thúc tỷ Đỗ Thị Kỳ
+Hiển Tổ cô Lê Thị Điều,Nữ,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,
+Hiển Tổ thúc Lê Công Trị,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,Hiển tổ thúc tỷ Nguyễn Thị Vỵ
+Hiển Tổ  cô Lê Thị Lựu,Nữ,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,
+Lê Thị Vang,Nữ,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,
+Hiển Tổ thúc Lê Công Vễn,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,
+Hiển Tổ thúc Lê Công Thiện,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,Vợ Ô Thiện
+Lê HVVD,,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Sinh-đầu Phái Nhì,
+Lê Công Đoái,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Lại-đầu Phái Ba,Lương Thị Miên
+Lê Công Liêu,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Lại-đầu Phái Ba,Phan Thị Vị
+Lê Thị Tư,Nữ,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Lại-đầu Phái Ba,
+Hiển Tổ cô Lê Thị Đào,Nữ,,,6,,,,,Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,
+Hiển Tổ cô Lê Thị Lê,Nữ,,,6,,,,,Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,
+Hiển Tổ thúc Lê Công Tín,Nam,,,6,,,,,Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,Nguyễn Thị Mẹo
+Hiển Tổ thúc Lê Công Dai,Nam,,,6,,,,,Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,Thị Mót
+Hiển Tổ thúc Lê Công Quỳ,Nam,,,6,,,,,Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,
+Hiển Tổ thúc Lê Công Thưởng,Nam,,,6,,,,,Hiển Tẳng Tổ  khảo Lê Công Nhơn-đầu Phái Bốn,
+Lê Công Sỏ,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Hồ,
+Lê Thị Duyên,Nữ,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Hồ,
+Lê Công Đàn,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Hồ,
+Lê Công Kham,Nam,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Hồ,
+Lê HVVD,,,,6,,,,,Hiển Tẳng Tổ khảo Lê Công Hồ,
+Lê Công Điềm,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,"Lê Thị Ngọ, Nguyễn Thị Híu, Lê Thị Sọt"
+Lê Công Xung,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,"Nguyễn Thị Miêu, Thứ thất Nguyễn Thị Cặn"
+Lê Thị Húi,Nữ,,,7,,,,,Hiển Tổ khảo Lê Công Tính,
+Lê Công Nghi,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,"Nguyễn Thị Ngọ, Nguyễn Thị Mật, Lê Thị Quốc"
+Lê Công Luân,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,
+Lê Công Khản,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,
+Lê Công Xương,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,
+Lê Công Vỹ,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,Nguyên Thị Cải
+Lê Công Hậu,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,chính thất Nguyễn Thị Vói
+Lê Công Sỹ,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,
+Lê Công Y,Nam,,,7,,,,,Hiển Tổ khảo Lê Công Tính,Nguyễn Thị Diên
+Lê Thị Thời,Nữ,,,7,,,,,Hiển Tổ khảo Lê Công Tính,
+Lê Công Dõng,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Liệu,"chính thất Nguyên Thị Tạo, Thứ thất Nguyễn Thị Quỳ"
+Lê HVVD,,,,7,,,,,Hiển Tổ thúc khảo Lê Công Liệu,
+Lê Thị Tiệp,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Liệu,
+Lê Công Dành,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Liệu,
+Lê Công Lượng (con Thị Ngõ),Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Liệu,
+Lê Thị Số,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,
+Lê HVVD,,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,
+Lê Công Hoành,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,V o Hoành
+Lê Thị Thanh,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,
+Lê Thị Thú,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,
+Lê Thị Cầm,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,
+Lê Thị Én,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Xuyên,
+Lê Công Điệt,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Công Truyền,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Công Một,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Công Cúc,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Trị,Chính thất Lê Thị Mính
+Lê Thị Kinh,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Thị Sử,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Thị Trí,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Công Triết,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Trị,Nguyễn Thị Hiểu
+Lê HVVD,,,,7,,,,,Hiển Tổ thúc Lê Công Trị,
+Lê Công Bài,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Thiện,
+Lê Thị Dậu,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Thiện,
+Lê Công Bãng,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Thiện,Chính thất Lê Thị Dục
+Lê Thị Thiu,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Thiện,
+Lê Công Tỵ,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Thiện,
+Lê Công Tấn,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Thiện,Chính thất Nguyễn Thị Chúy
+Lê Công Vỵ,Nam,,,7,,,,,Lê Công Đoái,
+Lê Công Hoát,Nam,,,7,,,,,Lê Công Đoái,Nguyễn Thị Vãng(Họ Ng Tử)
+Lê Công Đốc,Nam,,,7,,,,,Lê Công Đoái,
+Lê HVVD,,,,7,,,,,Lê Công Đoái,
+Lê Thị Chính,Nữ,,,7,,,,,Lê Công Đoái,
+Lê Công Đinh,Nam,,,7,,,,,Lê Công Đoái,Nguyễn Thị Cát(Họ Nguyễn Tử)
+Lê Thị Túy,Nữ,,,7,,,,,Lê Công Đoái,
+Lê Công Dư,Nam,,,7,,,,,Lê Công Liêu,
+Lê Công Bức,Nam,,,7,,,,,Lê Công Liêu,
+Lê HVVD,,,,7,,,,,Lê Công Liêu,
+Lê Công Phan,Nam,,,7,,,,,Lê Công Liêu,
+Lê Công Dung,Nam,,,7,,,,,Lê Công Liêu,Phan Thị Phi
+Lê Công Dẫn,Nam,,,7,,,,,Lê Công Liêu,
+Lê Công Diễn,Nam,,,7,,,,,Lê Công Liêu,
+Lê Thị Duệ,Nữ,,,7,,,,,Lê Công Liêu,
+Lê Thị Duyên,Nữ,,,7,,,,,Lê Công Liêu,
+Lê Công Tùng,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Tín,MVNAH Lê Thị Hẹ
+Lê Công Bá,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Tín,Hoàng Thị Bạch
+Lê Thị Lý,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Tín,
+Lê Công Thọ,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Tín,
+Lê Công Luận,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Tín,
+Lê Công Thận,Nam,,,7,,,,,Hiển Tổ thúc Lê Công Tín,"Nguyễn Thị Biện, Nguyễn Thị Xinh"
+Lê Thị Giá,Nữ,,,7,,,,,Hiển Tổ thúc Lê Công Dai,
+Lê Công Khác,Nam,,,8,,,,,Lê Công Điềm,Chính thất Lê Thị Nẫm
+Lê Thị Thúc,Nữ,,,8,,,,,Lê Công Điềm,
+Lê Công Hiệu,Nam,,,8,,,,,Lê Công Điềm,
+Lê Thị Truyền,Nữ,,,8,,,,,Lê Công Điềm,
+Lê Công Thung,Nam,,,8,,,,,Lê Công Điềm,
+Lê Công Tố,Nam,,,8,,,,,Lê Công Điềm,
+Lê Công Vị,Nam,,,8,,,,,Lê Công Điềm,Nguyễn Thị Tế (Họ Ng Hữu)
+Lê Thị Thứ,Nữ,,,8,,,,,Lê Công Điềm,
+Lê Công Thường,Nam,,,8,,,,,Lê Công Điềm,
+Lê Thị Chấn,Nữ,,,8,,,,,Lê Công Điềm,
+Lê Công Phát,Nam,,,8,,,,,Lê Công Điềm,Nguyễn Thị Yêm
+Lê Thị Hoạch,Nữ,,,8,,,,,Lê Công Điềm,
+Lê Thị Đỗ,Nữ,,,8,,,,,Lê Công Điềm,
+Lê Công Đồng,Nam,,,8,,,,,Lê Công Điềm,Nguyễn Thị Ới
+Lê Thị Nhứt,Nữ,,,8,,,,,Lê Công Xung,
+Lê Thị Vàng,Nữ,,,8,,,,,Lê Công Xung,
+Lê Công Khôi,Nam,,,8,,,,,Lê Công Xung,Lê Thị Thỉu
+Lê Công Ngẫu,Nam,,,8,,,,,Lê Công Xung,
+Lê Thị Việc,Nữ,,,8,,,,,Lê Công Xung,
+Lê Thị Thoa,Nữ,,,8,,,,,Lê Công Xung,
+Lê HVVD,,,,8,,,,,Lê Công Xung,
+Lê Thị Tu,Nữ,,,8,,,,,Lê Công Xung,
+Lê Công Xứng,Nam,,,8,,,,,Lê Công Xung,
+Lê Công Kiệm,Nam,,,8,,,,,Lê Công Xung,
+Lê Công Thuần,Nam,,,8,,,,,Lê Công Xung,
+Lê Thị Thuận,Nữ,,,8,,,,,Lê Công Xung,
+Lê Thị Ngưng,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Thị Nga,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Thị Bút,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Thị Yên,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Thị Tâm,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Thị Đáo,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Thị Thôi,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Công Vị,Nam,,,8,,,,,Lê Công Nghi,Nguyễn Thị Tế
+Lê Thị Mĩu,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Công Quýnh,Nam,,,8,,,,,Lê Công Nghi,Nguyễn Thị Hụng ok
+Lê Công Sử,Nam,,,8,,,,,Lê Công Nghi,"Phan Thị Mẽn, Mai Thị Diệp"
+Lê Thị Nữ,Nữ,,,8,,,,,Lê Công Nghi,
+Lê Công Kiệt,Nam,,,8,,,,,Lê Công Vỹ,
+Lê Công Hào,Nam,,,8,,,,,Lê Công Vỹ,"Chính thất Hoàng Thị Dõ, Kế thất Hoàng Thị Thử"
+Lê Công Cừu,Nam,,,8,,,,,Lê Công Vỹ,
+Lê Công Ngọ,Nam,,,8,,,,,Lê Công Hậu,
+Lê Công Tả,Nam,,,8,,,,,Lê Công Hậu,
+Lê HVVD,,,,8,,,,,Lê Công Hậu,
+Lê Thị Hiền,Nữ,,,8,,,,,Lê Công Hậu,
+Lê Công Huống,Nam,,,8,,,,,Lê Công Hậu,"Chính thất mai Thị Kiệt, Thiếp Nguyễn Thị Lụt"
+Lê Công Dâm,Nam,,,8,,,,,Lê Công Hậu,"Chính thất Nguyễn Thị Mốc, Kế thiếp Nguyễn Thị Moong, Thiếp 3 Nguyễn Thị Sẽ"
+Lê Thị Tần,Nữ,,,8,,,,,Lê Công Y,
+Lê Thị Ân,Nữ,,,8,,,,,Lê Công Y,
+Lê Thị Thảo,Nữ,,,8,,,,,Lê Công Y,
+Lê Thị Đĩu,Nữ,,,8,,,,,Lê Công Y,
+Lê Công Ước,Nam,,,8,,,,,Lê Công Y,
+Lê Thị Mực,Nữ,,,8,,,,,Lê Công Y,
+Lê Thị Son,Nữ,,,8,,,,,Lê Công Y,
+Lê HVVD,,,,8,,,,,Lê Công Y,
+Lê Thị Phấn,Nữ,,,8,,,,,Lê Công Y,
+Lê Công Năng,Nam,,,8,,,,,Lê Công Dõng,
+Lê Công Duyệt,Nam,,,8,,,,,Lê Công Dõng,
+Lê Thị Đoan,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Trinh,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Phương,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Tú,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Mẽn,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Công Biệt,Nam,,,8,,,,,Lê Công Dõng,
+Lê Thị Mãi,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Tương,Nữ,,,8,,,,,Lê Công Dõng,
+Lê HVVD,,,,8,,,,,Lê Công Dõng,
+Lê Thị Chao,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Tép,Nữ,,,8,,,,,Lê Công Dõng,
+Lê Thị Đam,Nữ,,,8,,,,,Lê Công Dõng,
+Lê HVVD,,,,8,,,,,Lê Công Dõng,
+Lê Công Trợ,Nam,,,8,,,,,Lê Công Dõng,Lê Thị Thạch
+Lê Thị Điều,Nữ,,,9,,,,,Lê Công Vị,
+Lê Công Sự,Nam,,,9,,,,,Lê Công Vị,
+Lê Công Thước,Nam,,,8,,,,,Lê Công Bá,"Chính thất Nguyễn Thị Hạnh, Kế thất Nguyễn Thị Quyên"
+Lê Công Ngữ,Nam,,,8,,,,,Lê Công Bá,Trần Thị Mão (Đìu)
+Lê HVVD,,,,8,,,,,Lê Công Bá,
+Lê Thị Viện,Nữ,,,8,,,,,Lê Công Bá,
+Lê HVVD,,,,8,,,,,Lê Công Bá,
+Lê Công Thận,Nam,,,8,,,,,Lê Công Bá,
+Lê Công Nhàn,Nam,,,8,,,,,Lê Công Bá,
+Lê Thị Hành,Nữ,,,8,,,,,Lê Công Bá,
+Lê Công Tiện(Hiền),Nam,,,8,,,,,Lê Công Bá,Vợ ông Tiện
+Lê Công Tiệm,Nam,,,8,,,,,Lê Công Tùng,
+Lê Thị Thông,Nữ,,,8,,,,,Lê Công Tùng,Nguyễn Thọ San
+Lê Công Đơn,Nam,,,8,,,,,Lê Công Tùng,"Nguyễn Thị Xá, Lê Thị Khuyếc"
+Lê Thị Luật,Nữ,,,8,,,,,Lê Công Tùng,Nguyễn Cửu Thể
+Lê Công Lạp,Nam,,,8,,,,,Lê Công Tùng,Nguyễn Thị Con (Duyên)
+Lê HVVD,,,,8,,,,,Lê Công Tùng,
+Lê Công Biên,Nam,,,8,,,,,Lê Công Tùng,"Nguyễn Thị Xân, Lê Thị Trai"
+Lê HVVD,,,,8,,,,,Lê Công Tùng,
+Lê Thị Lệ,Nữ,,,8,,,,,Lê Công Tùng,
+Lê HVVD,,,,8,,,,,Lê Công Tùng,
+Lê Công Hận,Nam,,,8,,,,,Lê Công Thận,
+Lê HVVD,,,,8,,,,,Lê Công Thận,
+Lê Công Tặng,Nam,,,8,,,,,Lê Công Thận,"Nguyễn Thị Mèo, Trần Thị Mỹ"
+Lê Thị Thí Quyện,Nữ,,,8,,,,,Lê Công Thận,
+Lê HVVD,,,,8,,,,,Lê Công Thận,
+Lê Thị Điu Truyện,Nữ,,,8,,,,,Lê Công Thận,
+Lệ Công Mạn (Dũng),Nam,,,8,,,,,Lê Công Thận,"Lê Thị Trắc, Nguyễn Thị Hoa"
+Lê Thị Kiếm Đọng,Nữ,,,8,,,,,Lê Công Thận,
+Lê Công Ngoạn,Nam,,,9,,,,,Lê Công Biên,
+Lê Thị Đằng,Nữ,,,9,,,,,Lê Công Biên,
+Lê Công Điện,Nam,,,9,,,,,Lê Công Biên,
+Lê Công Bằng,Nam,,,9,,,,,Lê Công Biên,Trần Thị Yến
+Lê Thị Thiểu,Nữ,,,9,,,,,Lê Công Biên,
+Lê Thị  Mến,Nữ,,,9,,,,,Lê Công Biên,
+Lê Thị Chung,Nữ,,,9,,,,,Lê Công Biên,
+Lê Thị Đẳng,Nữ,,,9,,,,,Lê Công Biên,
+Lê Thị Thanh,Nữ,,,9,,,,,Lê Công Biên,
+Lê Thị Nhàn,Nữ,,,9,,,,,Lê Công Biên,Hoàng Vui
+Lê Thị Thúy,Nữ,,,9,,,,,Lê Công Biên,
+Lê Công Kỷ,Nam,,,9,,,,,Lê Công Biên,Nguyễn Thị Thu Thuỷ
+Lê Nguyễn Phúc Nguyên,Nữ,,,10,,,,,Lê Công Kỷ,
+Lê Công Sang,Nam,,,10,,,,,Lê Công Kỷ,
+Lê Hà Lan,Nữ,,,10,,,,,Lê Công Bằng,
+Lê Diệu Hương,Nữ,,,10,,,,,Lê Công Bằng,
+Lê Thị Duyên,Nữ,,,9,,,,,Lê Công Lạp,
+Lê Thị Duyện,Nữ,,,9,,,,,Lê Công Lạp,
+Lê Công Lạc,Nam,,,9,,,,,Lê Công Lạp,
+Lê Công Đoàn,Nam,,,9,,,,,Lê Công Lạp,Nguyễn Thị Hoàng
+Lê Hoàng Hằng,Nữ,,,10,,,,,Lê Công Đoàn,
+Lê Công Đình,Nam,,,10,,,,,Lê Công Đoàn,Nguyễn Thị Thu Hà
+Lê Công Đạt,Nam,,,11,,,,,Lê Công Đình,
+Lê Bảo Hân,Nữ,,,11,,,,,Lê Công Đình,
+Lê Công Trương(Dụng),Nam,,,9,,,,,Lê Công Đơn,
+Lê Công Đổng,Nam,,,9,,,,,Lê Công Đơn,
+Lê Công Diệm,Nam,,,9,,,,,Lê Công Đơn,Trần Thị Dẫn
+Lê Thị Toàn,Nữ,,,9,,,,,Lê Công Đơn,
+Lê Thị Liệu,Nữ,,,10,,,,,Lê Công Diệm,
+Lê Công Mốc(Thuật),Nam,,,9,,,,,Lê Công Tặng,
+Lê Thị Hoa,Nữ,,,9,,,,,Lê Công Tặng,
+Lê Thị Thị,Nữ,,,9,,,,,Lê Công Tặng,
+Lê Công Thành,Nam,,,9,,,,,Lê Công Tặng,
+Lê Thị Lĩnh,Nữ,,,9,,,,,Lê Công Tặng,
+Lê Thị Nượng,Nữ,,,9,,,,,Lệ Công Mạn (Dũng),
+Lê Thị Thê,Nữ,,,9,,,,,Lệ Công Mạn (Dũng),
+Lê Công Bình,Nam,,,9,,,,,Lệ Công Mạn (Dũng),
+Lê Công Minh,Nam,,,9,,,,,Lệ Công Mạn (Dũng),
+Lê Công Tịnh,Nam,,,9,,,,,Lệ Công Mạn (Dũng),Nguyễn Thị Huệ
+Lê Thị Lương,Nữ,,,9,,,,,Lệ Công Mạn (Dũng),
+Lê Công Quyền,Nam,,,9,,,,,Lệ Công Mạn (Dũng),Lê Thị Mỹ Hạnh
+Lê Công Thanh,Nam,,,10,,,,,Lê Công Tịnh,
+Lê Công Toán,Nam,,,10,,,,,Lê Công Tịnh,
+Lê Công Quỳnh,Nam,,,10,,,,,Lê Công Quyền,Thị Liễu
+Lê Thị Kim Quy,Nữ,,,10,,,,,Lê Công Quyền,
+Lê Thị Khánh Huyền,Nữ,,,10,,,,,Lê Công Quyền,
+Lê Thị Khánh Hòa,Nữ,,,10,,,,,Lê Công Quyền,
+Lê Công Minh Quân,Nam,,,10,,,,,Lê Công Quyền,
+Lê Công Đàm,Nam,,,9,,,,,Lê Công Khác,Nguyễn Thị Hường(QB)
+Lê Thị Dưng,Nữ,,,9,,,,,Lê Công Khác,
+Lê Công Khoái,Nam,,,9,,,,,Lê Công Khác,Vợ ông Khoái Mẹ ông Danh
+Lê Công Diếp,Nam,,,9,,,,,Lê Công Khác,
+Lê Công Ngật,Nam,,,9,,,,,Lê Công Khác,
+Lê Công Tuần,Nam,,,9,,,,,Lê Công Khác,
+Lê Công Khởi,Nam,,,9,,,,,Lê Công Khác,
+Lê Công Để,Nam,,,9,,,,,Lê Công Khác,"Chính thất Nguyễn Thị Thích, Thứ thất Nguyễn Thị Hường"
+Lê HVVD,,,,9,,,,,Lê Công Khác,
+Lê Công Cảm,Nam,,,9,,,,,Lê Công Đồng,
+Lê Công Khảm,Nam,,,9,,,,,Lê Công Đồng,
+Lê Công Mông (Nhất),Nam,,,9,,,,,Lê Công Đồng,Lê Thị Đậu
+Lê Công Túc,Nam,,,9,,,,,Lê Công Đồng,Thị An
+Lê Thị Ứng,Nữ,,,9,,,,,Lê Công Đồng,
+Lê Thị Biệt,Nữ,,,9,,,,,Lê Công Đồng,
+Lê Công Nguyên,Nam,,,9,,,,,Lê Công Đồng,
+Lê Thị Sót,Nữ,,,9,,,,,Lê Công Đồng,
+Lê Công Ký,Nam,,,9,,,,,Lê Công Đồng,Lê Thị Mầng
+Lê Thị Hiến,Nữ,,,9,,,,,Lê Công Đồng,
+Lê HVVD,,,,9,,,,,Lê Công Đồng,
+Lê Thị Trọng,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Công Thiêm,Nam,,,9,,,,,Lê Công Khôi,Nguyễn Thị Đìu (Họ Ng Đức)
+Lê Công Khái,Nam,,,9,,,,,Lê Công Khôi,Lê Thị Thiết (Họ Lê Đình)
+Lê Công Xuyến,Nam,,,9,,,,,Lê Công Khôi,Lê Thị Đọng
+Lê HVVD,,,,9,,,,,Lê Công Khôi,
+Lê Thị Thiếp,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Công Trầm,Nam,,,9,,,,,Lê Công Khôi,
+Lê Hvvd,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Thị Lãnh,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Thị Sạ,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Thị Thể,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Công Di,Nam,,,9,,,,,Lê Công Khôi,Nguyễn Thị Tâm
+Lê Thị Thao,Nữ,,,9,,,,,Lê Công Khôi,
+Lê Công Chó,Nam,,,9,,,,,Lê Công Hào,
+Lê Thị Sáo,Nữ,,,9,,,,,Lê Công Hào,
+Lê Công Phóng,Nam,,,9,,,,,Lê Công Hào,Lê Thị Điu
+Lê Thị Quyên,Nữ,,,9,,,,,Lê Công Hào,
+Lê Thị Phiến,Nữ,,,9,,,,,Lê Công Hào,
+Lê Thị Du,Nữ,,,9,,,,,Lê Công Hào,
+Lê Thị Liễu,Nữ,,,9,,,,,Lê Công Hào,
+Lê Công Uyển,Nam,,,9,,,,,Lê Công Hào,
+Lê Thị Vân,Nữ,,,9,,,,,Lê Công Huống,..
+Lê Thị Học,Nữ,,,9,,,,,Lê Công Huống,
+Lê Hvvd,Nữ,,,9,,,,,Lê Công Huống,
+Lê Công Tuỵ,Nam,,,9,,,,,Lê Công Huống,Nguyễn Thị Oanh (Họ Ng Hữu)
+Lê Thị Vẽ,Nữ,,,9,,,,,Lê Công Huống,
+Lê Thị Lạc,Nữ,,,9,,,,,Lê Công Huống,
+Lê Công Vượng,Nam,,,9,,,,,Lê Công Dâm,
+Lê Thị Ngoan,Nữ,,,9,,,,,Lê Công Dâm,
+Lê Thị Ngân,Nữ,,,9,,,,,Lê Công Dâm,
+Lê Thị Bân,Nữ,,,9,,,,,Lê Công Dâm,
+Lê Công Thuỷ,Nam,,,9,,,,,Lê Công Dâm,
+Lê Công Hốt - Viễn,Nam,,,9,,,,,Lê Công Dâm,Lê Thị Mùi
+Lê Thị Sau,Nữ,,,9,,,,,Lê Công Dâm,
+Lê Thị Dõ,Nữ,,,9,,,,,Lê Công Dâm,
+Lê Công Khắc,Nam,,,8,,,,,Lê Công Hoát,"Nguyễn Thị Thảo, kế thất Phạm Thị Thốn"
+Lê Công Cự,Nam,,,8,,,,,Lê Công Hoát,Đoạn Thị Thược
+Lê Công Thám,Nam,,,8,,,,,Lê Công Hoát,Nguyễn Thị Thảo
+Lê Công Vọng,Nam,,,8,,,,,Lê Công Hoát,"Chính thất Lê Thị Vân, Kế thất Lê Thị Nậy"
+Lê Thị Xấu,Nữ,,,8,,,,,Lê Công Hoát,
+Lê Công Hoài,Nam,,,8,,,,,Lê Công Hoát,Nguyễn Thị Địu
+Lê Công Đá,Nam,,,8,,,,,Lê Công Đinh,Lê Thị Đồng
+Lê HVVD,,,,8,,,,,Lê Công Đinh,
+Lê Thị Thuý,Nữ,,,8,,,,,Lê Công Đinh,
+Lê Thị Mỵ,Nữ,,,8,,,,,Lê Công Đinh,
+Lê Thị Vinh,Nữ,,,8,,,,,Lê Công Đinh,
+Lê Công Y,Nam,,,8,,,,,Lê Công Dung,Nguyễn Thị Diên
+Lê HVVd,Nữ,,,8,,,,,Lê Công Dung,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Dung,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Dung,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Dung,
+Lê Công Khanh,Nam,,,8,,,,,Lê Công Dung,
+Lê Thị Yển,Nữ,,,9,,,,,Lê Công Trợ,
+Lê Công Vĩ,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Hộ,
+Lê Công Kĩnh,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Hộ,"Chính thất Nguyễn Thị Kiều, Thiếp Dương Thị Tiệp"
+Lê Công Thiếc,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Hộ,Nguyễn thị Thiu
+Lê Công chữ Hán,Nam,,,7,,,,,Hiển Tổ thúc khảo Lê Công Hộ,
+Lê Thị Yết,Nữ,,,8,,,,,Lê Công Kĩnh,
+Lê Thị Cầm,Nữ,,,8,,,,,Lê Công Kĩnh,
+Lê Thị Thạch họ Nguyễn Hữu,Nữ,,,8,,,,,Lê Công Kĩnh,
+Lê Công Phu,Nam,,,8,,,,,Lê Công Kĩnh,Trương Thị Nậy
+Lê Thị Miêu,Nữ,,,8,,,,,Lê Công Thiếc,
+Lê Thị Điều,Nữ,,,8,,,,,Lê Công Thiếc,
+Lê Công Chì,Nam,,,8,,,,,Lê Công Thiếc,
+Lê Thị Mãi,Nữ,,,8,,,,,Lê Công Thiếc,
+Lê Công Quảng,Nam,,,8,,,,,Lê Công Thiếc,
+Lê Công Mót,Nam,,,8,,,,,Lê Công Thiếc,
+Lê Công Máy,Nam,,,8,,,,,Lê Công Thiếc,
+Lê Thị Màng,Nữ,,,8,,,,,Lê Công Cúc,
+Lê Công Lan,Nam,,,8,,,,,Lê Công Cúc,
+Lê Công Trúc,Nam,,,8,,,,,Lê Công Cúc,Nguyễn Thị Ới
+Lê Thị Mãn,Nữ,,,8,,,,,Lê Công Cúc,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Cúc,
+Lê Công Kiến,Nam,,,8,,,,,Lê Công Cúc,
+Lê Công Bính,Nam,,,8,,,,,Lê Công Triết,
+Lê Công Cháu,Nam,,,8,,,,,Lê Công Triết,
+Lê Công Ý,Nam,,,8,,,,,Lê Công Triết,Lê Thị Thảo
+Lê Công Tứ,Nam,,,8,,,,,Lê Công Triết,Nguyễn Thị Chiu
+Lê Thị Thao,Nữ,,,8,,,,,Lê Công Triết,
+Lê Thị Thụ,Nữ,,,8,,,,,Lê Công Triết,
+Lê Thị Tốn,Nữ,,,8,,,,,Lê Công Triết,
+Lê Thị Thỏn,Nữ,,,8,,,,,Lê Công Triết,
+Lê Công Toại,Nam,,,8,,,,,Lê Công Triết,Nguyễn Thị Nga
+Lê Thị Sau,Nữ,,,8,,,,,Lê Công Triết,
+lê Hvvd,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Thị Đĩu,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Thị Chó,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Thị Hôi,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Công Hám,Nam,,,8,,,,,Lê Công Bãng,Nguyễn Thị Dõ
+Lê Công Thảng,Nam,,,8,,,,,Lê Công Bãng,Nguyễn Thị Phương
+Lê Thị Cháu,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Công Quyến,Nam,,,8,,,,,Lê Công Bãng,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Thị Sót,Nữ,,,8,,,,,Lê Công Bãng,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Tấn,
+Lê Thị Vẽ,Nữ,,,8,,,,,Lê Công Tấn,
+Lê Công Phẩm,Nam,,,8,,,,,Lê Công Tấn,
+Lê Hvvd,Nữ,,,8,,,,,Lê Công Tấn,
+Lê Công Tớn,Nam,,,8,,,,,Lê Công Tấn,
+Lê Thị Chó,Nữ,,,9,,,,,Lê Công Hám,
+Lê Công Tiễn,Nam,,,9,,,,,Lê Công Hám,Hoàng Thị Loan
+Lê Công Giáo,Nam,,,9,,,,,Lê Công Ý,Nguyễn Thị Phượng
+Lê Thị Kính,Nữ,,,9,,,,,Lê Công Thước,
+Lê Thị Nguyện,Nữ,,,9,,,,,Lê Công Thước,
+Lê Công Phán,Nam,,,9,,,,,Lê Công Thước,Nguyễn Thị Tuồng
+Lê Thị Tâm(Hai),Nữ,,,9,,,,,Lê Công Ngữ,
+Lê Thị Tình(Ba),Nữ,,,9,,,,,Lê Công Ngữ,Nguyễn Văn Sơn (Sáu Sơn)
+Lê Công Thống,Nam,,,9,,,,,Lê Công Ngữ,
+Lê Thị Nghiêm,Nữ,,,9,,,,,Lê Công Tiện(Hiền),
+Lê Thị Lành,Nữ,,,9,,,,,Lê Công Tiện(Hiền),
+Lê Công Ngọc,Nam,,,9,,,,,Lê Công Tiện(Hiền),
+Lê Công Huê,Nam,,,10,,,,,Lê Công Đàm,
+Lê Thị Hồng,Nữ,,,10,,,,,Lê Công Đàm,
+Lê Công Danh,Nam,,,10,,,,,Lê Công Khoái,Nguyễn Thị Đáng
+Lê Công Hanh,Nam,,,10,,,,,Lê Công Khoái,Lê Thị Lợi
+Lê Công Tố,Nam,,,10,,,,,Lê Công Để,
+Lê Thị Huê,Nữ,,,10,,,,,Lê Công Để,
+Lê Công Hội,Nam,,,10,,,,,Lê Công Để,Phan Thị Hoa
+Lê Thị Thí,Nữ,,,10,,,,,Lê Công Để,
+Lê Thị Thin,Nữ,,,10,,,,,Lê Công Để,
+Lê Công Thới,Nam,,,10,,,,,Lê Công Để,Lê Thị Lại
+Lê Thị Thơ,Nữ,,,10,,,,,Lê Công Để,
+Lê Thị Thởi,Nữ,,,10,,,,,Lê Công Để,
+Lê Công Phấn,Nam,,,9,,,,,Lê Công Phát,Thị Nữ
+Lê HVVD,,,,9,,,,,Lê Công Sử,
+Lê HVVD,,,,9,,,,,Lê Công Sử,
+Lê HVVD,,,,9,,,,,Lê Công Sử,
+Lê Công Duy,Nam,,,9,,,,,Lê Công Quýnh,
+Lê Công Vĩnh,Nam,,,9,,,,,Lê Công Quýnh,Nguyễn Thị Hoạt
+Lê Công Quát,Nam,,,9,,,,,Lê Công Quýnh,Vợ ông Quát
+Lê Thị Thí,Nữ,,,9,,,,,Lê Công Quýnh,
+Lê Công Đới,Nam,,,9,,,,,Lê Công Quýnh,
+Lê HVVD,,,,9,,,,,Lê Công Quýnh,
+Lê Thị Dung,Nữ,,,9,,,,,Lê Công Sử,
+Lê Thị Hiệp,Nữ,,,9,,,,,Lê Công Sử,
+Lê Thị Hạp(Linh),Nữ,,,9,,,,,Lê Công Sử,
+Lê Công Minh (Lưỡng),Nam,,,9,,,,,Lê Công Sử,Nguyễn Thị Hà
+Lê Công Thể,Nam,,,9,,,,,Lê Công Ngữ,
+Lê Thị Thế,Nữ,,,9,,,,,Lê Công Ngữ,
+Lê Thị Thứ,Nữ,,,9,,,,,Lê Công Ngữ,
+Lê Công Tuệ,Nam,,,9,,,,,Lê Công Ngữ,
+Lê Công Trợ (Chín),Nam,,,9,,,,,Lê Công Ngữ,
+Lê Công Tường,Nam,,,9,,,,,Lê Công Ngữ,
+Lê Thị Trang,Nữ,,,9,,,,,Lê Công Tiện(Hiền),
+Lê Công Hưng,Nam,,,11,,,,,Lê Công Hội,Thị Xuân
+Lê Công Hiếu,Nam,,,11,,,,,Lê Công Hội,Lê Thị Thuần
+Lê Thị Mén (Phúc),Nữ,,,9,,,,,Lê Công Hám,
+Lê HVVD,,,,9,,,,,Lê Công Tặng,
+Lê Công Hoàng,Nam,,,10,,,,,Lê Công Mông (Nhất),
+Lê Công Hồng( Thông?),Nam,,,10,,,,,Lê Công Mông (Nhất),Lê Thị Phước
+Hiển Cao Cao Tổ khảo Lê HVVD,,,,3,,,,,Hiển Cao Cao Cao Lê Công Nên,
+Lê Thị Dũng,Nữ,,,9,,,,,Lê Công Ý,
+Lê Thị Dưỡng,Nữ,,,9,,,,,Lê Công Ý,
+Lê HVVD,,,,9,,,,,Lê Công Ý,
+Lê Thị Phưởng,Nữ,,,9,,,,,Lê Công Ý,
+Lê Thị Sữu,Nữ,,,9,,,,,Lê Công Tứ,
+Lê Công Dám,Nam,,,9,,,,,Lê Công Hám,
+Lê Công Thuộc,Nam,,,9,,,,,Lê Công Hám,
+Lê Thị Phúc,Nữ,,,9,,,,,Lê Công Hám,
+Lê Thị Chúc,Nữ,,,9,,,,,Lê Công Hám,
+Lê HVVD,,,,9,,,,,Lê Công Hám,
+Lê Thị Phụng,Nữ,,,9,,,,,Lê Công Hám,
+Lê Công Hiền,Nam,,,11,,,,,Lê Công Hội,Nguyễn Thị Thiểu
+Lê Công Hoàng,Nam,,,11,,,,,Lê Công Hội,Lê Thị Ánh
+Lê Thị Lực,Nữ,,,7,,,,,Hiển Tổ thúc khảo Lê Công Liệu,
+Lê Công Bồi,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Công Cử,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Công Ngụ,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Công Xử,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Công  Tý,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Công Mùi,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Công Long,Nam,,,7,,,,,Hiển tổ thúc khảo Lê Công Hành,
+Lê Thị Chắt,Nữ,,,8,,,,,Lê Công Hoành,
+Lê Thị Chó,Nữ,,,8,,,,,Lê Công Hoành,
+Lê Thị Vằn,Nữ,,,8,,,,,Lê Công Hoành,
+Lê Thị Vẽ,Nữ,,,8,,,,,Lê Công Hoành,
+Lê Công Khoan,Nam,,,8,,,,,Lê Công Hoành,Vợ ông Khoan
+Lê Công Bật,Nam,,,8,,,,,Lê Công Hoành,"Chính thất Nguyễn Thị Thiên, Thiếp Nguyễn Thị Cháu"
+Lê Công Tất,Nam,,,8,,,,,Lê Công Hoành,
+Lê HVVD,,,,9,,,,,Lê Công Huống,
+Lê Thị Khương,Nữ,,,9,,,,,Lê Công Huống,
+Lê Công Bì,Nam,,,9,,,,,Lê Công Bật,
+Lê Công Viễn,Nam,,,9,,,,,Lê Công Bật,
+Lê Công Sơ,Nam,,,9,,,,,Lê Công Bật,
+Lê Thị Thiểu,Nữ,,,9,,,,,Lê Công Bật,
+Lê HVVD,,,,9,,,,,Lê Công Bật,
+Lê Thị Vân,Nữ,,,9,,,,,Lê Công Bật,
+Lê Công Xinh,Nam,,,9,,,,,Lê Công Bật,Hoàng Thị Ánh
+Lê Công Kiếm,Nam,,,9,,,,,Lê Công Bật,Nguyễn Thị Tư
+Lê Thị Ái,Nữ,,,9,,,,,Lê Công Trúc,
+Lê Công Trắc,Nam,,,9,,,,,Lê Công Trúc,
+Lê Thị Thẩm,Nữ,,,9,,,,,Lê Công Trúc,
+Lê Thị Nghiêm,Nữ,,,9,,,,,Lê Công Phát,
+Lê Công Luân,Nam,,,9,,,,,Lê Công Phát,
+Lê Thị Liêm,Nữ,,,9,,,,,Lê Công Phát,
+Lê Công Nghị,Nam,,,9,,,,,Lê Công Phát,
+Lê Công Thân,Nam,,,9,,,,,Lê Công Phát,
+Lê HVVD,,,,9,,,,,Lê Công Phát,
+Lê Thị Chiêm,Nữ,,,9,,,,,Lê Công Phát,
+Lê Thị Cháu,Nữ,,,9,,,,,Lê Công Khoan,
+Lê Công Hống,Nam,,,9,,,,,Lê Công Khoan,
+Lê Thị Dụy,Nữ,,,9,,,,,Lê Công Khoan,
+Lê Công Kiềm (Kiến),Nam,,,9,,,,,Lê Công Phu,Nguyễn Thị Sạ
+Lê Công Thuận,Nam,,,10,,,,,Lê Công Kiềm (Kiến),Nguyễn Thị Gái
+Lê Công Hoà,Nam,,,10,,,,,Lê Công Kiềm (Kiến),Nguyễn Thị Thu
+Lê Công Lang,Nam,,,9,,,,,Lê Công Thảng,
+Lê Thị Đốc,Nữ,,,9,,,,,Lê Công Thảng,
+Lê Thị Nậy,Nữ,,,9,,,,,Lê Công Thảng,
+Lê Công Trình,Nam,,,9,,,,,Lê Công Thảng,
+Lê Thị Toàn,Nữ,,,10,,,,,Lê Công Túc,
+Lê Thị Tiệp,Nữ,,,10,,,,,Lê Công Ký,
+Lê Công Trình,Nam,,,10,,,,,Lê Công Ký,Lê Thị Hiền
+Lê Thị Sen,Nữ,,,10,,,,,Lê Công Ký,
+Lê Thị Gái,Nữ,,,10,,,,,Lê Công Ký,
+Lê Thị Lợi,Nữ,,,10,,,,,Lê Công Mông (Nhất),
+Lê Công Xích,Nam,,,10,,,,,Lê Công Mông (Nhất),Thị Lài
+Lê Công Sáng,Nam,,,10,,,,,Lê Công Mông (Nhất),
+Lê Công Bạch,Nam,,,10,,,,,Lê Công Mông (Nhất),
+Lê Thị Thắm,Nữ,,,9,,,,,Lê Công Toại,
+Lê Công Khang,Nam,,,9,,,,,Lê Công Toại,
+Lê Thị Diện,Nữ,,,9,,,,,Lê Công Thảng,
+Lê Công Anh,Nam,,,9,,,,,Lê Công Thảng,Nguyễn Thị Hóa
+Lê Công Cháu,Nam,,,9,,,,,Lê Công Khắc,
+Lê HVVD,,,,9,,,,,Lê Công Khắc,
+Lê HVVD,,,,9,,,,,Lê Công Khắc,
+Lê HVVD,,,,9,,,,,Lê Công Khắc,
+Lê HVVD,,,,9,,,,,Lê Công Khắc,
+Lê Công Bố,Nam,,,9,,,,,Lê Công Khắc,Lê Thị Biên
+Lê Công Trấp,Nam,,,9,,,,,Lê Công Khắc,
+Lê Công Thắng,Nam,,,9,,,,,Lê Công Khắc,Thị Hải
+Lê HVVD,,,,9,,,,,Lê Công Khắc,
+Lê Công Phàn,Nam,,,9,,,,,Lê Công Cự,Nguyễn Thị Tương
+Lê Công Nghiêu,Nam,,,9,,,,,Lê Công Cự,
+Lê  Thị Hán,Nữ,,,9,,,,,Lê Công Cự,
+Lê HVVD,,,,9,,,,,Lê Công Cự,
+Lê Công Sách,Nam,,,9,,,,,Lê Công Cự,Phan Thị Chúng
+Lê HVVD,,,,9,,,,,Lê Công Cự,
+Lê Công Trong,Nam,,,9,,,,,Lê Công Thám,
+Lê Công Thí,Nam,,,9,,,,,Lê Công Thám,
+Lê Công Bão,Nam,,,9,,,,,Lê Công Thám,Nguyễn Thị Phụ
+Lê Thị Hường,Nữ,,,9,,,,,Lê Công Thám,
+Lê Thị Đĩu,Nữ,,,9,,,,,Lê Công Thám,
+Lê HVVD,,,,9,,,,,Lê Công Vọng,
+Lê HVVD,,,,9,,,,,Lê Công Vọng,
+Lê HVVD,,,,9,,,,,Lê Công Vọng,
+Lê Công Tưởng,Nam,,,9,,,,,Lê Công Vọng,Mai Thị Cam
+Lê Công Tấn,Nam,,,9,,,,,Lê Công Vọng,"Nguyễn Thị Chùy ,"
+Lê Thị Nghĩa,Nữ,,,9,,,,,Lê Công Vọng,
+Lê Thị Lới,Nữ,,,9,,,,,Lê Công Vọng,
+Lê Thị Lý,Nữ,,,9,,,,,Lê Công Vọng,
+Lê Thị Đoái,Nữ,,,9,,,,,Lê Công Hoài,
+Lê Công Đức,Nam,,,9,,,,,Lê Công Hoài,Nguyễn Thị Cho
+Lê Công Dao,Nam,,,9,,,,,Lê Công Hoài,
+Lê Thị Cứ,Nữ,,,9,,,,,Lê Công Hoài,
+Lê Công Cường,Nam,,,9,,,,,Lê Công Hoài,
+Lê Công Chó,Nam,,,8,,,,,Lê Công Đinh,
+Lê Công Hứa,Nam,,,9,,,,,Lê Công Thước,
+Lê Công Định,Nam,,,9,,,,,Lê Công Thước,
+Lê HVVD,,,,9,,,,,Lê Công Thước,
+Lê Thị Mai,Nữ,,,10,,,,,Lê Công Ký,
+Lê HVVD,,,,10,,,,,Lê Công Ký,
+Lê HVVD,,,,10,,,,,Lê Công Ký,
+Lê HVVD,,,,10,,,,,Lê Công Ký,
+Lê Công Nồng,Nam,,,10,,,,,Lê Công Thiêm,Nguyễn Thị Mầng
+Lê Thị Não,Nữ,,,10,,,,,Lê Công Thiêm,
+Lê HVVD,,,,10,,,,,Lê Công Thiêm,
+Lê Công Trí,Nam,,,10,,,,,Lê Công Thiêm,Nguyễn Thị Phúc
+Lê Thị Tuệ,Nữ,,,10,,,,,Lê Công Thiêm,
+Lê HVVD,,,,10,,,,,Lê Công Thiêm,
+Lê Thị Đính,Nữ,,,10,,,,,Lê Công Khái,
+Lê HVVD,,,,10,,,,,Lê Công Khái,
+Lê Thị Tha,Nữ,,,10,,,,,Lê Công Khái,
+Lê Công Khẳng,Nam,,,10,,,,,Lê Công Khái,"Nguyễn Thị Hoa, Trần Thị Nguyệt"
+Lê HVVD,,,,10,,,,,Lê Công Khái,
+Lê Công Khanh,Nam,,,10,,,,,Lê Công Khái,
+Lê Công Khương,Nam,,,10,,,,,Lê Công Khái,Hoàng Thị Sâm
+Lê Công Kha,Nam,,,10,,,,,Lê Công Khái,
+Lê Thị Soa,Nữ,,,10,,,,,Lê Công Xuyến,
+Lê HVVD,,,,10,,,,,Lê Công Xuyến,
+Lê Công Trâm,Nam,,,10,,,,,Lê Công Xuyến,
+Lê Thị Dỡn,Nữ,,,10,,,,,Lê Công Xuyến,
+Lê Thị Khánh,Nữ,,,10,,,,,Lê Công Xuyến,
+Lê Công Thành,Nam,,,10,,,,,Lê Công Xuyến,
+Lê HVVD,,,,10,,,,,Lê Công Xuyến,
+Lê Thị Điểu,Nữ,,,10,,,,,Lê Công Xuyến,
+Lê Công Quyết,Nam,,,10,,,,,Lê Công Xuyến,
+Lê Công Tiến,Nam,,,10,,,,,Lê Công Xuyến,
+Lê Thị Dụng,Nữ,,,10,,,,,Lê Công Xuyến,
+Lê Thị Tánh,Nữ,,,10,,,,,Lê Công Di,
+Lê Công Thụy,Nam,,,10,,,,,Lê Công Vĩnh,
+Lê Công Lãnh,Nam,,,10,,,,,Lê Công Vĩnh,
+Lê Thị Tho,Nữ,,,10,,,,,Lê Công Vĩnh,
+Lê Thị Thứ,Nữ,,,10,,,,,Lê Công Vĩnh,
+Lê Công Thành,Nam,,,10,,,,,Lê Công Vĩnh,
+Lê Công Thắng,Nam,,,10,,,,,Lê Công Phóng,
+Lê Thị Huê,Nữ,,,10,,,,,Lê Công Phóng,
+Lê Thị Hường,Nữ,,,10,,,,,Lê Công Phóng,
+Lê HVVD,,,,10,,,,,Lê Công Phóng,
+Lê Công Thăng,Nam,,,10,,,,,Lê Công Phóng,Nguyễn Thị Lựu
+Lê Công Đặng,Nam,,,10,,,,,Lê Công Phóng,Thị Thú
+Lê Công Đông,Nam,,,10,,,,,Lê Công Phóng,vợ Đông
+Lê Công Ủy,Nam,,,10,,,,,Lê Công Tuỵ,
+Lê Công Triện,Nam,,,10,,,,,Lê Công Tuỵ,
+Lê Công Tuyến,Nam,,,10,,,,,Lê Công Tuỵ,
+Lê Công Thắng (Dõ),Nam,,,10,,,,,Lê Công Tuỵ,
+Lê Thị,Nữ,,,10,,,,,Lê Công Hốt - Viễn,
+Lê Công An,Nam,,,10,,,,,Lê Công Hốt - Viễn,
+Lê Thị,Nữ,,,10,,,,,Lê Công Hốt - Viễn,
+Lê Thị Công Vy,Nam,,,10,,,,,Lê Công Hốt - Viễn,
+Lê Công Sỹ Nông,Nam,,,10,,,,,Lê Công Hốt - Viễn,
+Lê Thị Hạnh,Nữ,,,10,,,,,Lê Công Kiếm,
+Lê Công Nhân,Nam,,,10,,,,,Lê Công Kiếm,
+Lê Thị Liên,Nữ,,,10,,,,,Lê Công Giáo,
+Lê Thị Trắng,Nữ,,,10,,,,,Lê Công Giáo,
+Lê Thị Đỏ,Nữ,,,10,,,,,Lê Công Giáo,
+Lê Công Chức,Nam,,,10,,,,,Lê Công Giáo,
+Lê Công Huy,Nam,,,10,,,,,Lê Công Tiễn,
+Lê Thị Thơm,Nữ,,,10,,,,,Lê Công Tiễn,
+Lê Công Hoằng,Nam,,,10,,,,,Lê Công Tiễn,
+Lê Thị,Nữ,,,10,,,,,Lê Công Tiễn,
+Lê Công Hải,Nam,,,10,,,,,Lê Công Tiễn,
+Lê Công Nhật,Nam,,,10,,,,,Lê Công Anh,
+Lê Thị...,Nữ,,,10,,,,,Lê Công Anh,
+Lê Thị Giới,Nữ,,,10,,,,,Lê Công Bố,
+Lê Công Thuận,Nam,,,10,,,,,Lê Công Bố,
+Lê Thị Ngọc,Nữ,,,10,,,,,Lê Công Thắng,
+Lê Công Phi Long,Nam,,,10,,,,,Lê Công Thắng,
+Lê Công Minh Quân,Nam,,,10,,,,,Lê Công Thắng,
+Lê Thị Thúi,Nữ,,,10,,,,,Lê Công Thắng,
+Lê HVVD,,,,10,,,,,Lê Công Phàn,
+Lê Thị Huê,Nữ,,,10,,,,,Lê Công Phàn,
+Lê HVVD,,,,10,,,,,Lê Công Phàn,
+Lê HVVD,,,,10,,,,,Lê Công Phàn,
+Lê Công Lăng,Nam,,,10,,,,,Lê Công Phàn,
+Lê Thị Thúy,Nữ,,,10,,,,,Lê Công Phàn,
+Lê Thị Triết,Nữ,,,10,,,,,Lê Công Sách,
+Lê Công Truyền,Nam,,,10,,,,,Lê Công Tưởng,
+Lê HVVD,,,,10,,,,,Lê Công Tưởng,
+Lê Công Đạo,Nam,,,10,,,,,Lê Công Tưởng,Thị Mai
+Lê Thị Huê,Nữ,,,10,,,,,Lê Công Đức,
+Lê HVVD,,,,10,,,,,Lê Công Đức,
+Lê Thị Phượng,Nữ,,,10,,,,,Lê Công Đức,
+Lê Công Phúc,Nam,,,10,,,,,Lê Công Đức,
+Lê Thị Yến,Nữ,,,10,,,,,Lê Công Đức,
+Lê Công Thành,Nam,,,10,,,,,Lê Công Đức,
+Lê Công  X,Nam,,,10,,,,,Lê Công Đức,
+Lê Công Y,Nam,,,10,,,,,Lê Công Đức,
+Lê Thị Kính,Nữ,,,11,,,,,Lê Công Nồng,
+Lê Thị Xuân,Nữ,,,11,,,,,Lê Công Nồng,
+Lê Công Pháp,Nam,,,11,,,,,Lê Công Nồng,Lê Thị Phồn
+Lê Công Đông,Nam,,,11,,,,,Lê Công Nồng,Nguyễn Thị Loan
+Lê Thị Huệ,Nữ,,,11,,,,,Lê Công Trí,
+Lê Công Phương,Nam,,,12,,,,,Lê Công Pháp,vợ Phương
+Lê Thị Vinh,Nữ,,,12,,,,,Lê Công Pháp,
+Lê Thị Mai,Nữ,,,12,,,,,Lê Công Pháp,
+Lê Thị Hướng,Nữ,,,12,,,,,Lê Công Pháp,
+Lê Công Bắc,Nam,,,12,,,,,Lê Công Pháp,
+Lê Công Đức,Nam,,,12,,,,,Lê Công Đông,Vợ Bờm
+Lê Công Anh Tài,Nam,,,12,,,,,Lê Công Đông,
+Lê Công Bảo,Nam,,,12,,,,,Lê Công Đông,
+Lê Công Việt,Nam,,,11,,,,,Lê Công Đặng,vo viet
+Lê Thị Lan,Nữ,,,11,,,,,Lê Công Đặng,
+Lê Công Trường,Nam,,,11,,,,,Lê Công Thăng,
+Lê Công Doang,Nam,,,9,,,,,Lê Công Đá,"Nguyễn Thị Bưỡi, Trương Thị Thanh Ba"
+Lê Công Kim,Nam,,,10,,,,,Lê Công Doang,
+Lê Thị Hương,Nữ,,,10,,,,,Lê Công Doang,
+Lê Thị Kim Xuân,Nữ,,,10,,,,,Lê Công Doang,
+Lê Thị Thu,Nữ,,,10,,,,,Lê Công Doang,
+Lê Thị Trang,Nữ,,,10,,,,,Lê Công Doang,
+Lê Thị Liên,Nữ,,,10,,,,,Lê Công Doang,
+Lê Công Hoàng,Nam,,,10,,,,,Lê Công Doang,
+Lê Công chưa biết,Nam,,,10,,,,,Lê Công Doang,
+Lê Thị Nậy,Nữ,,,9,,,,,Lê Công Đá,
+Lê Thị Thí,Nữ,,,9,,,,,Lê Công Đá,
+Lê Thị Tình,Nữ,,,9,,,,,Lê Công Đá,
+Lê Thị Diệu,Nữ,,,9,,,,,Lê Công Đá,
+Lê Công Huân,Nam,,,9,,,,,Lê Công Đơn,
+Lê HVVD,,,,9,,,,,Lê Công Đơn,
+Lê Thị Sưu(Soa),Nữ,,,9,,,,,Lê Công Đơn,
+Lê Công Phong,Nam,,,10,,,,,Lê Công Phấn,Nguyễn Thị Hằng
+Lê Công Đính,Nam,,,10,,,,,Lê Công Phấn,
+Lê Thị Diệu,Nữ,,,10,,,,,Lê Công Phấn,
+Lê Thị Dung,Nữ,,,10,,,,,Lê Công Phấn,
+Lê Công Vân,Nam,,,10,,,,,Lê Công Phấn,
+Lê Công Khoa,Nam,,,11,,,,,Lê Công Phong,
+Lê Công..,Nam,,,11,,,,,Lê Công Phong,
+Lê Thị Hưỡng,Nữ,,,11,,,,,Lê Công Danh,
+Lê Công Phúc,Nam,,,11,,,,,Lê Công Danh,
+Lê Công Tiền,Nam,,,11,,,,,Lê Công Danh,
+Lê Thị Tư,Nữ,,,10,,,,,Lê Công Túc,
+Lê Thị Thái,Nữ,,,10,,,,,Lê Công Túc,
+Lê Công Sơn,Nam,,,10,,,,,Lê Công Túc,Nguyễn Thị Lành
+Lê Thị Sương,Nữ,,,10,,,,,Lê Công Túc,
+Lê Thị Nin,Nữ,,,10,,,,,Lê Công Túc,
+Lê Thị Bé,Nữ,,,11,,,,,Lê Công Thuận,
+Lê Công Giàu,Nam,,,11,,,,,Lê Công Thuận,vợ Giàu
+Lê Thị Huệ,Nữ,,,11,,,,,Lê Công Danh,
+Lê HVVD,,,,11,,,,,Lê Công Danh,
+Lê Công Nhân,Nam,,,11,,,,,Lê Công Danh,Nguyễn Thị Cúc (Bòn)
+Lê HVVD,,,,11,,,,,Lê Công Danh,
+Lê Công Hữu,Nam,,,11,,,,,Lê Công Danh,
+Lê HVVD,,,,11,,,,,Lê Công Danh,
+Lê Công Thọ,Nam,,,11,,,,,Lê Công Danh,
+Lê Công Chính,Nam,,,11,,,,,Lê Công Danh,
+Lê Công Lành,Nam,,,11,,,,,Lê Công Hanh,
+Lê Công Thạo,Nam,,,11,,,,,Lê Công Hồng( Thông?),
+Lê Công Tin,Nam,,,11,,,,,Lê Công Hồng( Thông?),Nguyễn Thị Trâm
+Lê Thị Hương,Nữ,,,11,,,,,Lê Công Khẳng,
+Lê Thị Huệ,Nữ,,,11,,,,,Lê Công Khẳng,
+Lê Công Tuấn,Nam,,,11,,,,,Lê Công Khẳng,
+Lê Thị Thu Hà,Nữ,,,11,,,,,Lê Công Khẳng,
+Lê Thị Bạch Yến,Nữ,,,11,,,,,Lê Công Khẳng,
+Lê Công Phong,Nam,,,11,,,,,Lê Công Khẳng,
+Lê Công Khoa,Nam,,,11,,,,,Lê Công Khương,
+Lê Công Truyền,Nam,,,10,,,,,Lê Công Phán,
+Lê HVVD,,,,10,,,,,Lê Công Phán,
+Lê Công Giáo,Nam,,,10,,,,,Lê Công Phán,
+Lê Công Thục,Nam,,,10,,,,,Lê Công Phán,Vợ cháu Thục
+Lê Công Dực,Nam,,,10,,,,,Lê Công Phán,
+Lê Công Phong,Nam,,,10,,,,,Lê Công Phán,
+Lê Công Lưu,Nam,,,10,,,,,Lê Công Phán,
+Lê Công Chiến,Nam,,,9,,,,,Lê Công Khắc,Mai Thị Thạch
+Lê Thị Xuân,Nữ,,,10,,,,,Lê Công Chiến,
+Lê Công Thành,Nam,,,10,,,,,Lê Công Chiến,
+Lê Công Dăng,Nam,,,10,,,,,Lê Công Bão,
+Le Thị Cảm,Nữ,,,10,,,,,Lê Công Bão,
+Lê Công Thành,Nam,,,10,,,,,Lê Công Bão,
+Lê Công Lũy,Nam,,,10,,,,,Lê Công Bão,
+Lê Công Phương,Nam,,,10,,,,,Lê Công Bão,
+Lê Công con Thục,Nam,,,11,,,,,Lê Công Thục,
+con thứ 2 ông Thục,Nữ,,,11,,,,,Lê Công Thục,
+Lê Thị Loan,Nữ,,,11,,,,,Lê Công Đặng,
+Con thứ 3 ông Anh,Nữ,,,10,,,,,Lê Công Anh,
+Lê Công Minh,Nam,,,11,,,,,Lê Công Thuận,
+con a sách,Nữ,,,9,,,,,Lê Công Cự,
+Lê Thị Trang,Nữ,,,11,,,,,Lê Công Thăng,
+Lê Thị Ty,Nữ,,,11,,,,,Lê Công Thăng,
+Lê Thị Ny,Nữ,,,11,,,,,Lê Công Trình,
+Lê Thị,Nữ,,,11,,,,,Lê Công Trình,
+Lê Công Trứ,Nam,,,11,,,,,Lê Công Trình,
+Lê Ngọc Phương Anh,Nữ,,,12,,,,,Lê Công Hưng,
+Lê Công Nhật Minh,Nam,,,12,,,,,Lê Công Hưng,
+Bé Đỏ,Nữ,,,11,,,,,Lê Công Quỳnh,
+Lê Thị Len,Nữ,,,11,,,,,Lê Công Thới,
+Lê Thị Rim,Nữ,,,11,,,,,Lê Công Thới,
+Lê Công,Nam,,,11,,,,,Lê Công Hoà,
+"Lê Công,,",Nam,,,11,,,,,Lê Công Hoà,
+Lê Anh Thư,Nữ,,,12,,,,,Lê Công Việt,
+Lê Công Khoa,Nam,,,12,,,,,Lê Công Việt,
+may,Nữ,,,13,,,,,Lê Công Phương,
+Liên,Nữ,,,11,,,,,Lê Công Thăng,
+khiêm,Nữ,,,11,,,,,Lê Công Thăng,
+Lê,Nữ,,,12,,,,,Lê Công Hoàng,
+Lê Công Huy,Nam,,,12,,,,,Lê Công Hoàng,
+Lê Công Gôn,Nam,,,12,,,,,Lê Công Hiếu,
+Lê Công Búi,Nam,,,12,,,,,Lê Công Tin,
+Lê Công Đạt,Nam,,,11,,,,,Lê Công Đạo,
+Lê Ni cô,Nữ,,,11,,,,,Lê Công Đạo,
+Lê Công Tý,Nam,,,11,,,,,Lê Công Khẳng,
+cu Hoàng,Nữ,,,12,,,,,Lê Công Hoàng,
+Lê Thị Thanh Tuyền,Nữ,,,10,,,,,Lê Công Doang,
+Lê Thị Hồng Nhung,Nữ,,,10,,,,,Lê Công Doang,
+Lê Thị Mỹ Huệ,Nữ,,,10,,,,,Lê Công Doang,
+Lê Công Minh,Nam,,,10,,,,,Lê Công Doang,

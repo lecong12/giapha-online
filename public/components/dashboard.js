@@ -73,6 +73,17 @@ function calculateAge(birthDate) {
   
   return age;
 }
+
+/**
+ * Rút gọn tên hiển thị cho cây gia phả (theo yêu cầu: 3-4 chữ giữ nguyên, dài hơn lấy 3 chữ cuối)
+ */
+function formatNameForTree(fullName) {
+  if (!fullName) return '';
+  const words = fullName.trim().split(/\s+/);
+  if (words.length <= 4) return fullName;
+  return words.slice(-3).join(' ');
+}
+
 /* ==========================================================
 1. CHUYỂN TAB
 ========================================================== */
@@ -100,7 +111,16 @@ function handleTabSwitch(event) {
     // ✅ THÊM LOGIC NÀY
     if (targetSelector === '#tree') {
         if (!treeRenderer) {
-            setTimeout(initFamilyTree, 100);
+            setTimeout(async () => {
+                await initFamilyTree();
+                showFullFamilyTree(); // Tự động hiện toàn bộ cây
+            }, 100);
+        } else {
+            // Nếu đã init, hiển thị lại toàn bộ cây ngay lập tức
+            setTimeout(() => {
+                showFullFamilyTree();
+                populatePersonDropdown(); // Cập nhật dropdown nếu có thành viên mới
+            }, 100);
         }
     }
 }
@@ -156,7 +176,22 @@ async function loadDashboardStats() {
     const total = stats.total || 0;
     const males = stats.males || 0;
     const females = stats.females || 0;
-    const maxGen = stats.maxGeneration || 0;
+    let maxGen = stats.maxGeneration || 0;
+
+    // ✅ Fix: Tự động tính tổng số đời từ danh sách thế hệ nếu API trả về 0
+    if (maxGen === 0 && stats.generations && Array.isArray(stats.generations)) {
+        const validGens = stats.generations
+            .map(g => {
+                // Hỗ trợ cả generation (SQL) và _id (MongoDB Aggregate)
+                const val = (g.generation !== undefined) ? g.generation : g._id;
+                return parseInt(val);
+            })
+            .filter(g => !isNaN(g));
+            
+        if (validGens.length > 0) {
+            maxGen = Math.max(...validGens);
+        }
+    }
 
     // 1. Gán số liệu vào các ô
     const totalEl = document.getElementById('totalMembers');
@@ -186,12 +221,26 @@ async function loadDashboardStats() {
     if (femalePercentEl) femalePercentEl.textContent = femalePercentText;
 
     // 3. Phân bố thế hệ theo %
-    const genDist = stats.generations || []; // [{ generation, count }]
+    let genDist = stats.generations || []; 
+    
+    // ✅ Fix: Map _id -> generation (cho MongoDB) và Sort
+    genDist = genDist.map(item => ({
+        generation: (item.generation !== undefined) ? item.generation : item._id,
+        generation: (item.generation !== undefined && item.generation !== null) ? item.generation : (item._id || 0),
+        count: item.count
+    })).sort((a, b) => a.generation - b.generation);
+
     renderGenerationPie(genDist, total);
 
     // 4. Sinh nhật sắp tới (raw, sẽ render sau)
     const upcoming = stats.upcomingBirthdays || [];
     renderUpcomingBirthdays(upcoming);
+
+    // 5. Ngày giỗ sắp tới
+    const deathAnniversaries = stats.upcomingDeathAnniversaries || [];
+    if (typeof renderUpcomingDeathAnniversaries === 'function') {
+        renderUpcomingDeathAnniversaries(deathAnniversaries);
+    }
 
     const activities = stats.activities || [];
     renderRecentActivities(activities);
@@ -287,7 +336,7 @@ function renderGenerationPie(genDist, total) {
         colorBox.style.background = getGenerationColor(idx);
 
         const label = document.createElement('span');
-        label.textContent = `Đời ${seg.generation}: ${seg.count} (~${seg.percent}%)`;
+        label.textContent = `Đời thứ ${seg.generation}: ${seg.count} (~${seg.percent}%)`;
 
         row.appendChild(colorBox);
         row.appendChild(label);
@@ -302,7 +351,7 @@ function renderGenerationPie(genDist, total) {
 function getGenerationColor(index) {
     const colors = [
         '#f97316', '#000000ff',
-        '#0ea5e9', '#1eff00ff',
+        '#f97316', '#1eff00ff',
         '#43ad6aff', '#5300beff',
         '#a855f7', 
         '#f43f5e', 
@@ -564,19 +613,79 @@ function renderMembers(members) {
     return;
   }
 
-  members.forEach(member => {
+  // ✅ SẮP XẾP & GOM NHÓM: Đời -> Order -> Ngày sinh -> Vợ chồng (Nam trước)
+  const sortedRaw = [...members].sort((a, b) => {
+      // 1. Theo đời
+      const genDiff = (a.generation || 99) - (b.generation || 99);
+      if (genDiff !== 0) return genDiff;
+      
+      // 2. Theo Order (nếu có)
+      const orderA = (a.order !== undefined && a.order !== null) ? a.order : 9999;
+      const orderB = (b.order !== undefined && b.order !== null) ? b.order : 9999;
+      if (orderA !== orderB) return orderA - orderB;
+
+      // 3. Theo ngày sinh
+      return (a.birth_date || '9999').localeCompare(b.birth_date || '9999');
+  });
+
+  const finalMembers = [];
+  const processedIds = new Set();
+
+  sortedRaw.forEach(member => {
+      const mId = member._id || member.id;
+      if (processedIds.has(mId)) return;
+
+      // Xác định giới tính
+      const gender = (member.gender || '').toLowerCase();
+      const isMale = ['nam', 'male', 'trai'].includes(gender);
+
+      // Tìm vợ/chồng trong danh sách hiện tại (để gom nhóm)
+      let spouse = null;
+      const spouseId = (member.spouse && (member.spouse._id || member.spouse.id)) || member.spouse_id;
+      
+      if (spouseId) {
+          spouse = sortedRaw.find(s => (s._id || s.id) == spouseId);
+      }
+
+      if (spouse && !processedIds.has(spouse._id || spouse.id)) {
+          // Cặp đôi chưa xử lý -> Gom nhóm (Nam trước, Nữ sau)
+          if (isMale) {
+              finalMembers.push(member);
+              finalMembers.push(spouse);
+          } else {
+              finalMembers.push(spouse); // Chồng trước
+              finalMembers.push(member); // Vợ sau
+          }
+          processedIds.add(mId);
+          processedIds.add(spouse._id || spouse.id);
+      } else {
+          // Độc thân hoặc vợ/chồng không trong list/đã xử lý
+          finalMembers.push(member);
+          processedIds.add(mId);
+      }
+  });
+
+  finalMembers.forEach(member => {
     const card = document.createElement('div');
     card.className = 'member-item';
     
+    // ✅ Xử lý giới tính & Avatar (Nam / Nữ / Chưa rõ)
+    const genderLower = (member.gender || '').toLowerCase();
+    let avatarBg = 'linear-gradient(135deg, #9ca3af, #d1d5db)'; // Mặc định: Xám (Chưa rõ)
+    let genderIcon = '<i class="fas fa-question" style="color:#6b7280;"></i>'; // Icon ?
+
+    if (['nam', 'male', 'trai'].includes(genderLower)) {
+        avatarBg = 'linear-gradient(135deg, #f97316, #fbbf24)'; // Cam (Nam)
+        genderIcon = '<i class="fas fa-mars" style="color:#f97316;"></i>';
+    } else if (['nữ', 'nu', 'female', 'gái'].includes(genderLower)) {
+        avatarBg = 'linear-gradient(135deg, #ec4899, #f472b6)'; // Hồng (Nữ)
+        genderIcon = '<i class="fas fa-venus" style="color:#ec4899;"></i>';
+    }
+
     // Avatar
     const avatarHtml = member.avatar 
       ? `<img src="${member.avatar}" class="member-avatar" alt="${member.full_name}" />`
-      : `<div class="member-avatar">${member.full_name.charAt(0)}</div>`;
-
-    // Giới tính icon
-    const genderIcon = member.gender === 'Nam' 
-      ? '<i class="fas fa-mars" style="color:#0ea5e9;"></i>'
-      : '<i class="fas fa-venus" style="color:#ec4899;"></i>';
+      : `<div class="member-avatar" style="background: ${avatarBg};">${member.full_name.charAt(0)}</div>`;
 
     // Trạng thái
   // Trạng thái - Hiển thị tuổi nếu còn sống, "Đã mất" nếu đã mất
@@ -587,7 +696,7 @@ if (member.is_alive) {
   // Người còn sống → Hiển thị tuổi
   const age = calculateAge(member.birth_date);
   statusText = age > 0 ? `${age} tuổi` : 'N/A';
-  statusColor = '#10b981'; // Màu xanh
+  statusColor = age > 0 ? '#10b981' : '#f59e0b'; // Màu xanh hoặc cam
 } else {
   // Người đã mất
   statusText = 'Đã mất';
@@ -598,14 +707,16 @@ if (member.is_alive) {
     const userRole = localStorage.getItem('userRole');
     let actionsHtml = '';
     
+    // ✅ Tính toán tên vợ/chồng (ưu tiên object đã link, fallback về text)
+    const spouseName = (member.spouse && member.spouse.full_name) ? member.spouse.full_name : (member.spouse_name || '');
+
     if (userRole === 'owner') {
       actionsHtml = `
         <div class="member-actions">
-          
-          <button class="btn-edit" onclick="openEditMemberModal(${member.id})">
+          <button class="btn-edit" onclick="openEditMemberModal(${member.id})" style="padding: 4px 8px; font-size: 12px;">
             <i class="fas fa-edit"></i> Sửa
           </button>
-          <button class="btn-delete" onclick="deleteMember(${member.id})">
+          <button class="btn-delete" onclick="deleteMember(${member.id})" style="padding: 4px 8px; font-size: 12px;">
             <i class="fas fa-trash"></i> Xóa
           </button>
         </div>
@@ -613,7 +724,7 @@ if (member.is_alive) {
     } else {
       actionsHtml = `
         <div class="member-actions">
-          <button class="btn-edit" onclick="viewMemberDetail(${member.id})" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
+          <button class="btn-edit" onclick="viewMemberDetail(${member.id})" style="background: linear-gradient(135deg, #f97316, #fbbf24);">
             <i class="fas fa-eye"></i> Xem Chi Tiết
           </button>
         </div>
@@ -627,7 +738,7 @@ if (member.member_type === 'in_law') {
        <div class="member-header">
         ${avatarHtml}
          <div>
-           <span class="generation-badge-small">Đời ${member.generation || 'N/A'}</span>
+           <span class="generation-badge-small">Đời thứ ${member.generation || 'N/A'}</span>
             ${memberTypeBadge}
           </div>
          </div>
@@ -636,6 +747,7 @@ if (member.member_type === 'in_law') {
         <div class="member-info">
           <p><i class="fas fa-birthday-cake"></i> ${member.birth_date || 'N/A'}</p>
           <p><i class="fas fa-heart"></i> <span style="color:${statusColor}">${statusText}</span></p>
+          ${spouseName ? `<p><i class="fas fa-ring" style="color:#ec4899;"></i> ${spouseName}</p>` : ''}
           ${member.phone ? `<p><i class="fas fa-phone"></i> ${member.phone}</p>` : ''}
           ${member.job ? `<p><i class="fas fa-briefcase"></i> ${member.job}</p>` : ''}
         </div>
@@ -656,22 +768,31 @@ if (member.member_type === 'in_law') {
 // 5.3. Tìm kiếm đơn giản (search bar)
 function setupSimpleSearch() {
   const searchInput = document.getElementById('searchInput');
-  if (!searchInput) return;
+  const filterType = document.getElementById('filterMemberType'); // ✅ Lấy element lọc
+  
+  if (!searchInput || !filterType) return;
 
-  searchInput.addEventListener('input', (e) => {
-    const keyword = e.target.value.toLowerCase().trim();
-    
-    if (!keyword) {
-      renderMembers(allMembers);
-      return;
-    }
+  // Hàm xử lý lọc chung
+  const handleFilter = () => {
+    const keyword = searchInput.value.toLowerCase().trim();
+    const type = filterType.value; // 'all', 'blood', hoặc 'in_law'
 
-    const filtered = allMembers.filter(m => 
-      m.full_name.toLowerCase().includes(keyword)
-    );
+    const filtered = allMembers.filter(m => {
+      // 1. Lọc theo tên
+      const matchName = m.full_name.toLowerCase().includes(keyword);
+      
+      // 2. Lọc theo loại (Database tách biệt logic tại đây)
+      const matchType = type === 'all' || m.member_type === type;
+      
+      return matchName && matchType;
+    });
 
     renderMembers(filtered);
-  });
+  };
+
+  // Lắng nghe sự kiện
+  searchInput.addEventListener('input', handleFilter);
+  filterType.addEventListener('change', handleFilter);
 }
 
 // 5.4. Mở modal thêm thành viên
@@ -694,11 +815,15 @@ async function openAddMemberModal() {
   form.reset();
   title.textContent = 'Thêm Thành Viên';
   
-  // ✅ THÊM LOGIC: Ẩn/hiện field Generation
-  setupGenerationField();
+  // ✅ Setup dropdown tìm kiếm
+  setupSearchableDropdown('memberParentSearch', 'memberParent', 'memberParentResults', allMembers, updateGenerationLogic);
+  setupSearchableDropdown('memberSpouseSearch', 'memberSpouse', 'memberSpouseResults', allMembers, updateGenerationLogic);
   
-  await loadParentOptions();
-  await loadSpouseOptions();
+  // Reset hidden inputs
+  document.getElementById('memberParent').value = '';
+  document.getElementById('memberSpouse').value = '';
+  
+  updateGenerationLogic();
   
   modal.classList.add('active');
 }
@@ -748,9 +873,24 @@ document.getElementById('isDeceasedUnknown').checked = isDeceasedUnknown;
     document.getElementById('memberAddress').value = member.address || '';
     document.getElementById('memberNote').value = member.notes || '';
   
-    // Load options
-    await loadParentOptions(member.parents && member.parents.length > 0 ? member.parents[0].id : null);
-    await loadSpouseOptions(member.spouse ? member.spouse.spouse_id : null);
+    // ✅ Điền thông tin vào ô tìm kiếm (Edit Mode)
+    const parent = member.parents && member.parents.length > 0 ? member.parents[0] : null;
+    const spouse = member.spouse;
+
+    document.getElementById('memberParentSearch').value = parent ? parent.full_name : '';
+    document.getElementById('memberParent').value = parent ? parent.id : '';
+    
+    // ✅ Fix: Hiển thị tên vợ/chồng (ưu tiên full_name từ object, fallback text)
+    const displaySpouseName = (spouse && spouse.full_name) ? spouse.full_name : (member.spouse_name || '');
+    const displaySpouseId = (spouse && spouse.id) ? spouse.id : '';
+    document.getElementById('memberSpouseSearch').value = displaySpouseName;
+    document.getElementById('memberSpouse').value = displaySpouseId;
+
+    // Filter chính mình ra khỏi danh sách gợi ý
+    const validMembers = allMembers.filter(m => m.id !== memberId);
+    
+    setupSearchableDropdown('memberParentSearch', 'memberParent', 'memberParentResults', validMembers, updateGenerationLogic);
+    setupSearchableDropdown('memberSpouseSearch', 'memberSpouse', 'memberSpouseResults', validMembers, updateGenerationLogic);
   
     // ✅ THÊM DÒNG NÀY - Setup generation field cho chế độ edit
     // Khi edit, generation nên bị disable (không cho sửa)
@@ -776,42 +916,6 @@ function closeAddMemberModal() {
   editingMemberId = null;
 }
 
-// 5.7. Load danh sách cha/mẹ
-async function loadParentOptions(selectedId = null) {
-  const select = document.getElementById('memberParent');
-  if (!select) return;
-
-  select.innerHTML = '<option value="">-- Không có --</option>';
-  
-  allMembers.forEach(m => {
-    const option = document.createElement('option');
-    option.value = m.id;
-    option.textContent = `${m.full_name} (Đời ${m.generation || 'N/A'})`;
-    if (selectedId && m.id === selectedId) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-}
-
-// 5.8. Load danh sách vợ/chồng
-async function loadSpouseOptions(selectedId = null) {
-  const select = document.getElementById('memberSpouse');
-  if (!select) return;
-
-  select.innerHTML = '<option value="">-- Không có --</option>';
-  
-  allMembers.forEach(m => {
-    const option = document.createElement('option');
-    option.value = m.id;
-    option.textContent = `${m.full_name} (${m.gender})`;
-    if (selectedId && m.id === selectedId) {
-      option.selected = true;
-    }
-    select.appendChild(option);
-  });
-}
-
 // 5.9. Submit form (thêm/sửa)
 async function submitMemberForm(event) {
   event.preventDefault();
@@ -821,6 +925,7 @@ async function submitMemberForm(event) {
 
   const parentId = document.getElementById('memberParent').value;
   const spouseId = document.getElementById('memberSpouse').value;
+  const spouseNameText = document.getElementById('memberSpouseSearch').value.trim();
   const generation = document.getElementById('memberGeneration').value;
 
   // ✅ VALIDATION MỚI
@@ -837,7 +942,7 @@ async function submitMemberForm(event) {
   // TH2: Đời > 1
   else {
     // Phải có ít nhất 1 trong 2: cha/mẹ HOẶC vợ/chồng
-    if (!parentId && !spouseId) {
+    if (!parentId && !spouseId && !spouseNameText) {
       alert('⚠️ Thành viên đời > 1 phải có cha/mẹ (con ruột) hoặc vợ/chồng (con dâu/rễ)');
       return;
     }
@@ -882,7 +987,8 @@ const data = {
     notes: document.getElementById('memberNote').value.trim(),
     parent_id: parentId || null,
     spouse_id: spouseId || null,
-    member_type: parentId ? 'blood' : 'in_law'
+    spouse_name: spouseNameText || null,
+    member_type: parentId ? 'blood' : ((spouseId || spouseNameText) ? 'in_law' : 'blood')
 };
 
   if (!data.full_name) {
@@ -958,12 +1064,23 @@ async function viewMemberDetail(memberId) {
   : '👨‍👩‍👧‍👦 Con ruột';
     if (!modal || !content) return;
 
+    // ✅ Xử lý giới tính & Avatar cho Popup
+    const genderLower = (member.gender || '').toLowerCase();
+    let avatarBg = 'linear-gradient(135deg, #9ca3af, #d1d5db)';
+    
+    if (['nam', 'male', 'trai'].includes(genderLower)) {
+        avatarBg = 'linear-gradient(135deg, #f97316, #fbbf24)';
+    } else if (['nữ', 'nu', 'female', 'gái'].includes(genderLower)) {
+        avatarBg = 'linear-gradient(135deg, #ec4899, #f472b6)';
+    }
+
     // Render chi tiết
     const avatarHtml = member.avatar 
       ? `<img src="${member.avatar}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;" />`
-      : `<div style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#f97316,#fbbf24);display:flex;align-items:center;justify-content:center;color:white;font-size:36px;font-weight:bold;">${member.full_name.charAt(0)}</div>`;
+      : `<div style="width:100px;height:100px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-size:36px;font-weight:bold;">${member.full_name.charAt(0)}</div>`;
 
 let statusText = '';
+let statusColor = '';
 
 if (member.is_alive) {
   const age = calculateAge(member.birth_date);
@@ -984,8 +1101,13 @@ if (member.is_alive) {
       ? member.parents.map(p => `<span>${p.full_name}</span>`).join(', ')
       : 'Không có';
 
-    const spouseHtml = member.spouse 
-      ? member.spouse.spouse_name 
+    // ✅ Cải tiến: Xử lý nhiều cấu trúc dữ liệu cho vợ/chồng (ưu tiên full_name từ object)
+    const spouseObj = member.spouse;
+    const spouseName = (spouseObj && spouseObj.full_name) ? spouseObj.full_name : (member.spouse_name || '');
+    const spouseId = (spouseObj && spouseObj.id) ? spouseObj.id : (member.spouse_id || '');
+
+    const spouseHtml = spouseName
+      ? (spouseId ? `<a href="#" onclick="viewMemberDetail(${spouseId}); return false;" style="color:#f97316;text-decoration:none;font-weight:600;">${spouseName}</a>` : `<span>${spouseName}</span>`)
       : 'Không có';
 
     content.innerHTML = `
@@ -993,12 +1115,12 @@ if (member.is_alive) {
         <div style="text-align:center;">
           ${avatarHtml}
           <h2 style="margin-top:12px;">${member.full_name}</h2>
-          <p style="color:#666;">${statusText}</p>
+          <p style="color:${statusColor};font-weight:600;">${statusText}</p>
         </div>
         <div style="grid-column:1/-1;"><strong>Loại thành viên:</strong> ${memberTypeText}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div><strong>Giới tính:</strong> ${member.gender || 'N/A'}</div>
-          <div><strong>Thế hệ:</strong> Đời ${member.generation || 'N/A'}</div>
+          <div><strong>Thế hệ:</strong> Đời thứ ${member.generation || 'N/A'}</div>
          <div><strong>Ngày sinh:</strong> ${member.birth_date && member.birth_date !== 'unknown' ? member.birth_date : '🔸 Không rõ'}</div>
 <div><strong>Ngày mất:</strong> ${
   member.is_alive 
@@ -1880,42 +2002,38 @@ function renderPosts(posts) {
       : '<span style="background: #fed7aa; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-size: 11px;">👑 Admin</span>';
 
     // Kiểm tra quyền sửa/xóa
-    // Kiểm tra quyền sửa và xóa riêng biệt
-// Kiểm tra quyền sửa và xóa riêng biệt
-const canEdit = (post.author_id === userId);
-const canDelete = (userRole === 'owner') || (post.author_id === userId);
+    const canEdit = (post.author_id === userId);
+    const canDelete = (userRole === 'owner') || (post.author_id === userId);
 
-let actionsHtml = '';
-
-if (canEdit || canDelete) {
-  actionsHtml = `<div class="post-actions" style="display: flex; gap: 8px;">`; // ✅ THÊM BACKTICK
-  
-  if (canEdit) {
-    actionsHtml += `
-      <button class="btn-edit" onclick="event.stopPropagation(); openEditPostModal(${post.id})" 
-              style="padding: 6px 12px; background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; border: none; border-radius: 6px; cursor: pointer;">
-        <i class="fas fa-edit"></i> Sửa
-      </button>
-    `;
-  }
-  
-  if (canDelete) {
-    actionsHtml += `
-      <button class="btn-delete" onclick="event.stopPropagation(); deletePost(${post.id})" 
-              style="padding: 6px 12px; background: linear-gradient(135deg, #ef4444, #f87171); color: white; border: none; border-radius: 6px; cursor: pointer;">
-        <i class="fas fa-trash"></i> Xóa
-      </button>
-    `;
-  }
-  
-  actionsHtml += `</div>`; // ✅ THÊM BACKTICK
-}
-    card.innerHTML = `
-      ${post.is_pinned ? '<div style="position: absolute; top: 10px; right: 10px; background: #f97316; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">📌 Ghim</div>' : ''}
+    let actionsHtml = '';
+    if (canEdit || canDelete) {
+      actionsHtml = `<div class="post-actions" style="display: flex; gap: 8px;">`;
       
-      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-        <div style="flex: 1;">
-          <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">${post.title}</h3>
+      if (canEdit) {
+        actionsHtml += `
+          <button class="btn-edit" onclick="event.stopPropagation(); openEditPostModal(${post.id})" 
+                  style="padding: 4px 8px; font-size: 12px; background: linear-gradient(135deg, #f97316, #fbbf24); color: white; border: none; border-radius: 6px; cursor: pointer;">
+            <i class="fas fa-edit"></i> Sửa
+          </button>
+        `;
+      }
+      
+      if (canDelete) {
+        actionsHtml += `
+          <button class="btn-delete" onclick="event.stopPropagation(); deletePost(${post.id})" 
+                  style="padding: 4px 8px; font-size: 12px; background: linear-gradient(135deg, #ef4444, #f87171); color: white; border: none; border-radius: 6px; cursor: pointer;">
+            <i class="fas fa-trash"></i> Xóa
+          </button>
+        `;
+      }
+      
+      actionsHtml += `</div>`;
+    }
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+         <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0;">${post.title}</h3>
           <div style="display: flex; gap: 12px; font-size: 12px; color: #666; flex-wrap: wrap;">
             <span>${icon} ${categoryName}</span>
             <span>•</span>
@@ -1930,7 +2048,7 @@ if (canEdit || canDelete) {
 
       <div style="margin: 12px 0; line-height: 1.6; color: #374151;">${shortContent}</div>
 
-      <button onclick="event.stopPropagation(); viewPostDetail(${post.id})" style="padding: 8px 16px; background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+      <button onclick="event.stopPropagation(); viewPostDetail(${post.id})" style="padding: 8px 16px; background: linear-gradient(135deg, #f97316, #fbbf24); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
         <i class="fas fa-book-open"></i> Đọc tiếp
       </button>
     `;
@@ -2124,7 +2242,7 @@ if (canEdit || canDelete) {
   if (canEdit) {
     buttonsHtml += `
       <button class="btn-edit" onclick="closeViewPostModal(); openEditPostModal(${post.id});" 
-              style="padding: 8px 16px; background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, #f97316, #fbbf24); color: white; border: none; border-radius: 8px; cursor: pointer;">
         <i class="fas fa-edit"></i> Sửa
       </button>
     `;
@@ -2133,7 +2251,7 @@ if (canEdit || canDelete) {
   if (canDelete) {
     buttonsHtml += `
       <button class="btn-delete" onclick="closeViewPostModal(); deletePost(${post.id});" 
-              style="padding: 8px 16px; background: linear-gradient(135deg, #ef4444, #f87171); color: white; border: none; border-radius: 8px; cursor: pointer;">
+              style="padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, #ef4444, #f87171); color: white; border: none; border-radius: 8px; cursor: pointer;">
         <i class="fas fa-trash"></i> Xóa
       </button>
     `;
@@ -2321,6 +2439,9 @@ async function showFullFamilyTree() {
         // Hiển thị loading
         showLoadingIndicator('Đang tải toàn bộ cây gia phả...');
         
+        // ✅ Reset targetPersonId để hiển thị toàn bộ cây ở chế độ bao quát
+        treeRenderer.targetPersonId = null;
+
         // Gọi method mới
         await treeRenderer.renderFullTree();
         
@@ -2466,7 +2587,7 @@ async function initFamilyTree() {
         
         treeRenderer = new FamilyTreeRenderer('familyTreeSvg');
         
-        await treeRenderer.render(1);
+        await treeRenderer.render();
         
         populatePersonDropdown();
         
@@ -2476,417 +2597,8 @@ async function initFamilyTree() {
         alert('Lỗi tải cây gia phả: ' + error.message);
     }
 }
-
-/**
- * Tạo dropdown danh sách người
- */
-function populatePersonDropdown() {
-    const select = document.getElementById('personSelect');
-    
-    if (!treeRenderer || !treeRenderer.allPeople || treeRenderer.allPeople.length === 0) {
-        select.innerHTML = '<option value="">❌ Không có dữ liệu</option>';
-        return;
-    }
-
-    const sorted = [...treeRenderer.allPeople].sort((a, b) => {
-        const genDiff = (a.generation || 99) - (b.generation || 99);
-        if (genDiff !== 0) return genDiff;
-        return (a.full_name || '').localeCompare(b.full_name || '');
-    });
-
-    select.innerHTML = '<option value="">-- Chọn người để xem cây gia phả --</option>';
-    
-    sorted.forEach(person => {
-        const option = document.createElement('option');
-        option.value = person.id;
-        
-        const name = person.full_name || 'Không tên';
-        const gen = person.generation || '?';
-        const year = person.birth_date ? new Date(person.birth_date).getFullYear() : '?';
-        const status = person.is_alive ? '✅' : '⚰️';
-        
-        option.textContent = `${status} ${name} (Đời ${gen}, s.${year})`;
-        
-        if (person.id === treeRenderer.selectedPersonId) {
-            option.selected = true;
-        }
-        
-        select.appendChild(option);
-    });
-
-    console.log(`✅ Dropdown đã tạo: ${sorted.length} người`);
-}
-
-/**
- * Hiển thị cây của người được chọn
- */
-async function showSelectedPersonTree() {
-    const select = document.getElementById('personSelect');
-    const personId = parseInt(select.value);
-    
-    if (!personId) {
-        alert('⚠️ Vui lòng chọn một người từ danh sách');
-        return;
-    }
-
-    try {
-        const person = treeRenderer.allPeople.find(p => p.id === personId);
-        const name = person ? person.full_name : `ID ${personId}`;
-        
-        console.log(`🔄 Đang tải cây gia phả của ${name}...`);
-        
-        await treeRenderer.render(personId);
-        
-        console.log(`✅ Đã tải xong cây của ${name}`);
-    } catch (error) {
-        console.error('❌ Lỗi hiển thị cây:', error);
-        alert('❌ Lỗi: ' + error.message);
-    }
-}
-
-/**
- * Reset zoom về mặc định
- */
-function resetZoom() {
-    if (treeRenderer && treeRenderer.resetZoom) {
-        treeRenderer.resetZoom();
-        console.log('🔍 Đã đặt lại zoom');
-    }
-}
-
-/**
- * Download cây dưới dạng PDF
- */
-async function downloadTree() {
-    if (treeRenderer && treeRenderer.exportPDF) {
-        await treeRenderer.exportPDF();
-    } else {
-        alert('❌ Chức năng xuất PDF chưa sẵn sàng');
-    }
-}
-/* ==========================================================
-11. SETUP UI DỰA VÀO ROLE
-========================================================== */
-
-// 11.1. Ẩn/hiện các nút dựa vào role
-// 11.1. Ẩn/hiện các nút dựa vào role
-function setupMembersUI() {
-  const userRole = localStorage.getItem('userRole');
-  
-  if (userRole !== 'viewer') return; // Nếu không phải viewer thì không cần làm gì
-  
-  // Tìm tất cả nút trong members header
-  const membersHeader = document.querySelector('#members .members-header');
-  if (!membersHeader) return;
-  
-  // Tìm tất cả button trong header
-  const buttons = membersHeader.querySelectorAll('button');
-  
-  buttons.forEach(btn => {
-    const text = btn.textContent.trim();
-    
-    // Chỉ ẩn nút "Thêm Thành Viên"
-    if (text.includes('Thêm Thành Viên')) {
-      btn.style.display = 'none';
-    }
-    
-    // GIỮ NGUYÊN nút "Tìm Nâng Cao"
-  });
-}
-// 11.2. Ẩn tab Settings với viewer
-function hideSettingsForViewer() {
-  const userRole = localStorage.getItem('userRole');
-  
-  if (userRole === 'viewer') {
-    const settingsTab = document.querySelector('.tab-btn[data-target="#settings"]');
-    if (settingsTab) {
-      settingsTab.style.display = 'none';
-    }
-  }
-}
-// 11.3. Hiển thị thông báo cho viewer
-function showViewerNotice() {
-  const userRole = localStorage.getItem('userRole');
-  
-  if (userRole === 'viewer') {
-    // Tìm dashboard content
-    const dashboard = document.getElementById('dashboard');
-    if (!dashboard) return;
-
-    // Tạo notice banner
-    const notice = document.createElement('div');
-    notice.style.cssText = `
-      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-      border-left: 4px solid #0ea5e9;
-      padding: 16px 20px;
-      border-radius: 12px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    `;
-    
-    notice.innerHTML = `
-      <i class="fas fa-info-circle" style="font-size: 24px; color: #0284c7;"></i>
-      <div>
-        <p style="margin: 0; font-weight: 600; color: #0369a1;">
-          Bạn đang ở chế độ xem (Viewer)
-        </p>
-        <p style="margin: 4px 0 0 0; font-size: 13px; color: #0284c7;">
-          Bạn có thể xem thông tin gia phả nhưng không thể thêm, sửa hoặc xóa dữ liệu.
-        </p>
-      </div>
-    `;
-
-    // Chèn vào đầu dashboard
-    dashboard.insertBefore(notice, dashboard.firstChild);
-  }
-}
-// Thêm function render ngày giỗ
-function renderUpcomingDeathAnniversaries(list) {
-  const container = document.getElementById('deathAnniversaryList');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (!list.length) {
-    container.textContent = 'Không có ngày giỗ sắp tới.';
-    return;
-  }
-
-  list.forEach(item => {
-    const row = document.createElement('div');
-    row.className = 'death-anniversary-item';
-    row.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      padding: 12px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-      box-shadow: 0px 3px 5px rgba(0,0,0,0.15);
-      max-width: 95%;
-      border-left: 4px solid #6b7280;
-    `;
-
-    const top = document.createElement('div');
-    top.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    `;
-
-    const name = document.createElement('span');
-    name.style.fontWeight = '600';
-    name.textContent = item.full_name;
-
-    const days = document.createElement('span');
-    days.style.cssText = 'font-size: 12px; color: #6b7280;';
-    days.textContent = item.daysLeft === 0
-      ? '🕯️ Hôm nay'
-      : `Còn ${item.daysLeft} ngày`;
-
-    top.appendChild(name);
-    top.appendChild(days);
-
-    const bottom = document.createElement('div');
-    bottom.style.cssText = 'font-size: 12px; color: #555;';
-    bottom.textContent = `Giỗ năm thứ ${item.yearCount} • ${item.death_date} → ${item.nextAnniversary}`;
-
-    row.appendChild(top);
-    row.appendChild(bottom);
-    container.appendChild(row);
-  });
-}
-
-// Trong loadDashboardStats(), thêm:
-async function loadDashboardStats() {
-  try {
-    const data = await apiGet('/api/dashboard/stats');
-    
-    if (!data || !data.success) {
-      console.error('Lỗi load stats:', data);
-      return;
-    }
-
-    // ✅ DÒNG NÀY BẮT BUỘC PHẢI CÓ
-    const stats = data.stats || {};
-    
-    const total = stats.total || 0;
-    const males = stats.males || 0;
-    const females = stats.females || 0;
-    const maxGen = stats.maxGeneration || 0;
-
-    // Gán số liệu vào các ô
-    const totalEl = document.getElementById('totalMembers');
-    const maleCountEl = document.getElementById('maleCount');
-    const femaleCountEl = document.getElementById('femaleCount');
-    const malePercentEl = document.getElementById('malePercent');
-    const femalePercentEl = document.getElementById('femalePercent');
-    const generationCountEl = document.getElementById('generationCount');
-
-    if (totalEl) totalEl.textContent = total;
-    if (maleCountEl) maleCountEl.textContent = males;
-    if (femaleCountEl) femaleCountEl.textContent = females;
-    if (generationCountEl) generationCountEl.textContent = maxGen;
-
-    // Tính % Nam / Nữ
-    let malePercentText = '0%';
-    let femalePercentText = '0%';
-
-    if (total > 0) {
-      const malePercent = Math.round((males / total) * 100);
-      const femalePercent = Math.round((females / total) * 100);
-      malePercentText = malePercent + '%';
-      femalePercentText = femalePercent + '%';
-    }
-
-    if (malePercentEl) malePercentEl.textContent = malePercentText;
-    if (femalePercentEl) femalePercentEl.textContent = femalePercentText;
-
-    // Phân bố thế hệ
-    const genDist = stats.generations || [];
-    renderGenerationPie(genDist, total);
-
-    // Sinh nhật sắp tới
-    const upcoming = stats.upcomingBirthdays || [];
-    renderUpcomingBirthdays(upcoming);
-
-    // Ngày giỗ sắp tới
-    const deathAnniversaries = stats.upcomingDeathAnniversaries || [];
-    renderUpcomingDeathAnniversaries(deathAnniversaries);
-
-    // Hoạt động gần đây
-    const activities = stats.activities || [];
-    renderRecentActivities(activities);
-
-  } catch (err) {
-    console.error('Không thể kết nối server.', err);
-  }
-}
-/* ==========================================================
-   13. LOGIC TỰ ĐỘNG GENERATION
-========================================================== */
-
-/* ==========================================================
-   13. LOGIC TỰ ĐỘNG GENERATION
-========================================================== */
-
-// Setup generation field dựa vào parent_id
-function setupGenerationField() {
-    const parentSelect = document.getElementById('memberParent');
-    const spouseSelect = document.getElementById('memberSpouse');
-    const generationSelect = document.getElementById('memberGeneration');
-    const generationGroup = generationSelect.closest('.form-group');
-
-    if (!parentSelect || !generationSelect || !spouseSelect) return;
-
-    // Clone để xóa event listener cũ
-    const newParentSelect = parentSelect.cloneNode(true);
-    const newSpouseSelect = spouseSelect.cloneNode(true);
-    
-    parentSelect.parentNode.replaceChild(newParentSelect, parentSelect);
-    spouseSelect.parentNode.replaceChild(newSpouseSelect, spouseSelect);
-
-    // Ẩn field generation ban đầu
-    generationGroup.style.display = 'none';
-
-    // Function helper tính generation
-    function updateGeneration() {
-        const parentId = newParentSelect.value;
-        const spouseId = newSpouseSelect.value;
-
-        // TRƯỜNG HỢP 1: Có cha/mẹ → Con ruột
-        if (parentId) {
-            const parent = allMembers.find(m => m.id == parentId);
-            
-            if (parent && parent.generation) {
-                const childGeneration = parent.generation + 1;
-                
-                generationGroup.style.display = 'block';
-                generationSelect.innerHTML = `<option value="${childGeneration}">Thế hệ ${childGeneration} (Con ruột)</option>`;
-                generationSelect.value = childGeneration;
-                generationSelect.disabled = true;
-            }
-        }
-        // TRƯỜNG HỢP 2: Không có cha/mẹ, nhưng có vợ/chồng → Con dâu/rễ
-        else if (spouseId) {
-            const spouse = allMembers.find(m => m.id == spouseId);
-            
-            if (spouse && spouse.generation) {
-                generationGroup.style.display = 'block';
-                generationSelect.innerHTML = `<option value="${spouse.generation}">Thế hệ ${spouse.generation} (Con dâu/rễ)</option>`;
-                generationSelect.value = spouse.generation;
-                generationSelect.disabled = true;
-            }
-        }
-        // TRƯỜNG HỢP 3: Không có cả cha/mẹ và vợ/chồng → Thủy tổ
-        else {
-            generationGroup.style.display = 'block';
-            generationSelect.innerHTML = '<option value="1">Thế hệ 1 (Thủy tổ)</option>';
-            generationSelect.value = '1';
-            generationSelect.disabled = false;
-        }
-    }
-
-    // Lắng nghe thay đổi
-    newParentSelect.addEventListener('change', updateGeneration);
-    newSpouseSelect.addEventListener('change', updateGeneration);
-
-    // Trigger ban đầu
-    updateGeneration();
-}
-/* ==========================================================
-   14. SETUP VIEWER RESTRICTIONS (BỔ SUNG)
-========================================================== */
-/* ==========================================================
-   15. LOAD GENERATION OPTIONS CHO ADVANCED SEARCH
-========================================================== */
-
-/**
- * Load danh sách thế hệ từ dữ liệu thực tế
- * Tự động cập nhật dropdown trong Advanced Search
- */
-async function loadGenerationOptions() {
-  const select = document.getElementById('searchGeneration');
-  if (!select) return;
-
-  try {
-    // Lấy danh sách thế hệ từ stats API
-    const data = await apiGet('/api/dashboard/stats');
-    
-    if (!data || !data.success) {
-      console.error('Không load được stats để lấy thế hệ');
-      return;
-    }
-
-    const stats = data.stats || {};
-    const maxGeneration = stats.maxGeneration || 5; // Default 5 nếu không có data
-
-    // Xóa tất cả option cũ (trừ "-- Tất cả --")
-    const options = select.querySelectorAll('option:not([value=""])');
-    options.forEach(opt => opt.remove());
-
-    // Tạo option từ 1 đến maxGeneration
-    for (let i = 1; i <= maxGeneration; i++) {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = `Thế hệ ${i}`;
-      select.appendChild(option);
-    }
-
-    console.log(`✅ Đã load ${maxGeneration} thế hệ vào dropdown`);
-  } catch (err) {
-    console.error('Lỗi loadGenerationOptions:', err);
-  }
-}
-// Gọi function này khi mở Advanced Search Modal
-function restrictViewerInAdvancedSearch() {
-  const userRole = localStorage.getItem('userRole');
-  
-  if (userRole === 'viewer') {
-    // Viewer có thể tìm kiếm bình thường
-    // Không cần hạn chế gì thêm
-    console.log('Viewer đang sử dụng tìm kiếm nâng cao');
-  }
-}
+/* 
+   ĐÃ XÓA CÁC HÀM TRÙNG LẶP Ở CUỐI FILE
+   (populatePersonDropdown, setupSearchableDropdown, updateGenerationLogic, v.v.)
+   ĐỂ TRÁNH XUNG ĐỘT LOGIC
+*/

@@ -15,10 +15,20 @@ function hashPassword(password) {
 ============================================================ */
 async function register(req, res) {
   const db = getDb(req);
-  const { email, password, full_name } = req.body;
+
+  if (!db) {
+    console.error("❌ Lỗi: Database chưa được khởi tạo (db is null)");
+    return res.status(500).json({ success: false, message: 'Lỗi kết nối Database' });
+  }
+
+  // Thêm || {} để tránh crash nếu req.body bị undefined
+  const { email, password, full_name } = req.body || {};
+
+  console.log(`\n👉 Đang xử lý Đăng ký: Email="${email}", Name="${full_name}"`);
 
   // Validate
   if (!email || !password || !full_name) {
+    console.log("❌ Thiếu thông tin bắt buộc");
     return res.status(400).json({ 
       success: false, 
       message: 'Thiếu thông tin bắt buộc' 
@@ -26,6 +36,7 @@ async function register(req, res) {
   }
 
   if (password.length < 6) {
+    console.log("❌ Mật khẩu quá ngắn");
     return res.status(400).json({ 
       success: false, 
       message: 'Mật khẩu phải có ít nhất 6 ký tự' 
@@ -34,7 +45,13 @@ async function register(req, res) {
 
   // Kiểm tra email đã tồn tại
   db.get(`SELECT id FROM users WHERE email = ?`, [email], (err, existing) => {
+    if (err) {
+      console.error("❌ Lỗi kiểm tra email:", err.message);
+      return res.status(500).json({ success: false, message: 'Lỗi server khi kiểm tra email' });
+    }
+
     if (existing) {
+      console.log("❌ Email đã tồn tại");
       return res.status(400).json({ 
         success: false, 
         message: 'Email đã được sử dụng' 
@@ -55,7 +72,7 @@ async function register(req, res) {
 
     db.run(sql, [email, passwordHash, viewerCode, full_name, passwordHash], function(errInsert) {
       if (errInsert) {
-        console.error('Lỗi đăng ký:', errInsert.message);
+        console.error('❌ Lỗi insert user:', errInsert.message);
         return res.status(500).json({ 
           success: false, 
           message: 'Lỗi đăng ký tài khoản' 
@@ -63,9 +80,12 @@ async function register(req, res) {
       }
 
       const userId = this.lastID;
+      console.log(`✅ Đăng ký thành công! User ID: ${userId}`);
 
       // Update owner_id = id (tự tham chiếu)
-      db.run(`UPDATE users SET owner_id = ? WHERE id = ?`, [userId, userId]);
+      db.run(`UPDATE users SET owner_id = ? WHERE id = ?`, [userId, userId], (errUpdate) => {
+        if (errUpdate) console.error("⚠️ Lỗi update owner_id:", errUpdate.message);
+      });
 
       // Tạo token
       const randomPart = crypto.randomBytes(8).toString('hex');
@@ -79,7 +99,8 @@ async function register(req, res) {
           id: userId,
           email: email,
           full_name: full_name,
-          role: 'owner'
+          role: 'owner',
+          owner_id: userId
         }
       });
     });
@@ -91,7 +112,9 @@ async function register(req, res) {
 ============================================================ */
 async function loginOwner(req, res) {
   const db = getDb(req);
-  const { email, password } = req.body;
+  const { email, password } = req.body || {};
+
+  console.log(`\n👉 Đang thử đăng nhập Admin: Email="${email}"`);
 
   if (!email || !password) {
     return res.status(400).json({ 
@@ -101,11 +124,25 @@ async function loginOwner(req, res) {
   }
 
   // Tìm user
-  db.get(`SELECT * FROM users WHERE email = ? AND role = 'owner'`, [email], (err, user) => {
-    if (err || !user) {
+  db.get(`SELECT * FROM users WHERE email = ?`, [email], (err, user) => {
+    if (err) {
+      console.error("❌ Lỗi truy vấn DB:", err);
+      return res.status(500).json({ success: false, message: 'Lỗi server khi truy vấn' });
+    }
+
+    if (!user) {
+      console.log("❌ Lỗi: Không tìm thấy email này trong DB.");
       return res.status(401).json({ 
         success: false, 
         message: 'Email hoặc mật khẩu không đúng' 
+      });
+    }
+
+    if (user.role !== 'owner') {
+      console.log(`❌ Lỗi: User tìm thấy nhưng role là '${user.role}' (yêu cầu 'owner').`);
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Tài khoản này không có quyền Admin' 
       });
     }
 
@@ -113,12 +150,19 @@ async function loginOwner(req, res) {
     const passwordHash = hashPassword(password);
 
     // Kiểm tra cả password cũ và password_hash mới
-    if (user.password !== passwordHash && user.password_hash !== passwordHash) {
+    const isMatch = (user.password === passwordHash || user.password_hash === passwordHash);
+
+    if (!isMatch) {
+      console.log("❌ Lỗi: Sai mật khẩu!");
+      console.log("   - Hash nhập vào:", passwordHash);
+      console.log("   - Hash trong DB:", user.password_hash || user.password);
       return res.status(401).json({ 
         success: false, 
         message: 'Email hoặc mật khẩu không đúng' 
       });
     }
+
+    console.log("✅ Đăng nhập thành công!");
 
     // Tạo token
     const randomPart = crypto.randomBytes(8).toString('hex');
@@ -132,7 +176,8 @@ async function loginOwner(req, res) {
         id: user.id,
         email: user.email,
         full_name: user.full_name,
-        role: 'owner'
+        role: 'owner',
+        owner_id: user.owner_id
       }
     });
   });
