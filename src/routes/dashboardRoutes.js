@@ -96,7 +96,8 @@ function calcUpcomingBirthdays(members, daysAhead) {
         if (isNaN(birth.getTime())) return null;
 
         let next = new Date(currentYear, birth.getMonth(), birth.getDate());
-        if (next < today) next.setFullYear(currentYear + 1);
+        // Nếu ngày sinh nhật năm nay đã qua (nhỏ hơn hôm nay), tính cho năm sau
+        if (next.getTime() < today.getTime()) next.setFullYear(currentYear + 1);
         
         const diffDays = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
         
@@ -127,7 +128,7 @@ function calcUpcomingDeathAnniversaries(members, daysAhead) {
         if (isNaN(death.getTime())) return null;
 
         let next = new Date(currentYear, death.getMonth(), death.getDate());
-        if (next < today) next.setFullYear(currentYear + 1);
+        if (next.getTime() < today.getTime()) next.setFullYear(currentYear + 1);
         
         const diffDays = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
         const yearCount = currentYear - death.getFullYear();

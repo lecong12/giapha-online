@@ -280,7 +280,7 @@ async function importData() {
 
         try {
             // Hiển thị loading
-            alert("⏳ Đang xử lý import, vui lòng đợi...");
+            // alert("⏳ Đang xử lý import, vui lòng đợi..."); // Có thể dùng custom notification thay vì alert chặn UI
 
             const response = await fetch(API_URL + '/api/settings/import-csv', {
                 method: 'POST',
@@ -294,7 +294,7 @@ async function importData() {
             const result = await response.json();
             
             if (result.success) {
-                alert(`✅ ${result.message}`);
+                alert(`✅ IMPORT THÀNH CÔNG!\n\n- Đã thêm: ${result.successCount} thành viên\n- ${result.message}`);
                 // Reload lại trang hoặc danh sách thành viên
                 window.location.reload();
             } else {
@@ -437,6 +437,9 @@ function renderUpcomingBirthdays(list) {
     
     list.forEach(item => {
         const div = document.createElement('div');
+        // Logic hiển thị ngày
+        const daysText = item.daysLeft === 0 ? '<span style="color:#d97706; font-weight:bold;">Hôm nay!</span>' : `Còn ${item.daysLeft} ngày`;
+
         div.className = 'event-item'; // Assumes CSS exists
         div.style.cssText = 'display:flex; gap:10px; padding:8px; border-bottom:1px solid #eee; align-items:center;';
         div.innerHTML = `
@@ -445,7 +448,7 @@ function renderUpcomingBirthdays(list) {
             </div>
             <div>
                 <div style="font-weight:600;">${item.full_name}</div>
-                <div style="font-size:12px; color:#666;">Còn ${item.daysLeft} ngày</div>
+                <div style="font-size:12px; color:#666;">${daysText}</div>
             </div>
         `;
         container.appendChild(div);
@@ -459,6 +462,8 @@ function renderUpcomingDeathAnniversaries(list) {
     
     list.forEach(item => {
         const div = document.createElement('div');
+        const daysText = item.daysLeft === 0 ? '<span style="color:#d97706; font-weight:bold;">Hôm nay!</span>' : `Còn ${item.daysLeft} ngày`;
+
         div.style.cssText = 'display:flex; gap:10px; padding:8px; border-bottom:1px solid #eee; align-items:center;';
         div.innerHTML = `
             <div style="background:#fee2e2; color:#991b1b; padding:5px 10px; border-radius:8px; font-weight:bold;">
@@ -466,7 +471,7 @@ function renderUpcomingDeathAnniversaries(list) {
             </div>
             <div>
                 <div style="font-weight:600;">${item.full_name}</div>
-                <div style="font-size:12px; color:#666;">Mất ${item.yearCount} năm - Còn ${item.daysLeft} ngày</div>
+                <div style="font-size:12px; color:#666;">Mất ${item.yearCount} năm • ${daysText}</div>
             </div>
         `;
         container.appendChild(div);

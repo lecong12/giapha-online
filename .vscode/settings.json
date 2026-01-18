@@ -1,0 +1,8 @@
+{
+    "mdb.presetConnections": [
+        {
+            "name": "Preset Connection",
+            "connectionString": "mongodb+srv://lecong12:Lecong78@cluster0.onrzjrx.mongodb.net/GiaphaDB?retryWrites=true&w=majority"
+        }
+    ]
+}

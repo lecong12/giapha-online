@@ -1,4 +1,5 @@
 // src/middleware/auth.js
+const fs = require('fs');
 
 /* ============================================================
    MIDDLEWARE KIỂM TRA AUTHENTICATION
@@ -29,6 +30,11 @@ function checkAuth(req, res, next) {
     console.warn('   - Header:', authHeader);
     console.warn('   - Query:', req.query);
     console.warn('   - Body:', req.body); // Kiểm tra xem body có dữ liệu không
+    
+    // CLEANUP: Xóa file nếu upload thành công nhưng auth thất bại
+    if (req.file && req.file.path) {
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+    }
     return res.status(401).json({ success: false, message: 'Thiếu hoặc sai header Authorization' });
   }
 
@@ -65,6 +71,10 @@ function checkAuth(req, res, next) {
 
     next();
   } catch (err) {
+    // CLEANUP: Xóa file nếu token lỗi
+    if (req.file && req.file.path) {
+        try { fs.unlinkSync(req.file.path); } catch(e) {}
+    }
     return res.status(401).json({ 
       success: false, 
       message: 'Token không hợp lệ: ' + err.message 
