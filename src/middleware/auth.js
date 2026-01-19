@@ -57,6 +57,10 @@ function checkAuth(req, res, next) {
     if (!userIdPart || userIdPart.trim() === '') {
       throw new Error('User id invalid');
     }
+    // ✅ FIX: Kiểm tra định dạng MongoDB ObjectId (24 ký tự hex)
+    if (!/^[0-9a-fA-F]{24}$/.test(userIdPart)) {
+      throw new Error('User id must be a valid 24-char hex string');
+    }
 
     // Validate random part
     if (!randomPart || randomPart.trim() === '') {

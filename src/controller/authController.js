@@ -1,87 +1,103 @@
 const mongoose = require('mongoose');
-const User = mongoose.model('User');
 const crypto = require('crypto');
+const path = require('path');
+
+// Hàm helper để lấy Model User an toàn
+function getUserModel() {
+    if (mongoose.models.User) {
+        return mongoose.model('User');
+    }
+    try {
+        // Thử load từ đường dẫn tương đối
+        return require('../../User');
+    } catch (e) {
+        console.warn("⚠️ Load User model failed relative, trying absolute...");
+        try {
+            // Thử load từ đường dẫn tuyệt đối (gốc dự án)
+            return require(path.join(process.cwd(), 'User.js'));
+        } catch (e2) {
+            console.error("❌ CRITICAL: Cannot load User model:", e2);
+            throw new Error("User Model missing");
+        }
+    }
+}
 
 exports.login = async (req, res) => {
+    console.log("👉 [LOGIN START]", req.body);
+    
     try {
-        console.log('📥 Login Request:', req.body); 
-
-        if (!req.body || Object.keys(req.body).length === 0) {
-            return res.status(400).json({ success: false, message: 'Không nhận được dữ liệu đăng nhập' });
+        // 0. Kiểm tra kết nối DB
+        if (mongoose.connection.readyState !== 1) {
+            console.error("❌ DB Connection State:", mongoose.connection.readyState);
+            return res.status(500).json({ success: false, message: 'Lỗi kết nối Database. Vui lòng thử lại sau.' });
         }
 
-        const { username, email, password, viewer_code } = req.body;
+        const User = getUserModel();
+        if (!User) throw new Error("User Model is undefined");
 
-        // 1. Đăng nhập Viewer (dùng mã code)
-        if (viewer_code && viewer_code.trim() !== '') {
-            const viewer = await User.findOne({ viewer_code });
-            if (!viewer) return res.status(401).json({ success: false, message: 'Mã viewer không đúng' });
-            
-            // Nếu viewer có password (tùy chọn)
-            if (viewer.password_hash) {
-                 const hash = crypto.createHash('sha256').update(password).digest('hex');
-                 if (viewer.password_hash !== hash) {
-                     return res.status(401).json({ success: false, message: 'Sai mật khẩu viewer' });
-                 }
-            } else if (viewer.password && viewer.password !== 'N/A' && viewer.password !== password) {
-                 return res.status(401).json({ success: false, message: 'Sai mật khẩu viewer' });
-            }
+        const { username, password, role, viewer_code } = req.body;
 
-            return res.json({
-                success: true,
-                token: `viewer_${viewer._id}_${Date.now()}`,
-                role: 'viewer',
-                // Trả về object user để frontend đồng bộ
-                user: {
-                    _id: viewer._id,
-                    full_name: viewer.full_name,
-                    role: 'viewer'
-                }
+        // 1. Validate đầu vào
+        if (!password) return res.status(400).json({ success: false, message: 'Thiếu mật khẩu' });
+
+        let user;
+        console.log(`🔍 Searching user... Role: ${role}, User: ${username || viewer_code}`);
+
+        // 2. Tìm user tùy theo vai trò
+        if (role === 'owner') {
+            if (!username) return res.status(400).json({ success: false, message: 'Thiếu tên đăng nhập' });
+            // Tìm theo username HOẶC email (để linh hoạt)
+            user = await User.findOne({ 
+                $or: [{ username: username }, { email: username }] 
             });
+        } else {
+            if (!viewer_code) return res.status(400).json({ success: false, message: 'Thiếu mã thành viên' });
+            user = await User.findOne({ viewer_code });
         }
-
-        // 2. Đăng nhập Admin/Owner
-        // Hỗ trợ đăng nhập bằng username HOẶC email
-        const loginKey = username || email;
-        if (!loginKey) {
-             return res.status(400).json({ success: false, message: 'Vui lòng nhập tên đăng nhập hoặc email' });
-        }
-
-        const user = await User.findOne({ 
-            $or: [{ username: loginKey }, { email: loginKey }] 
-        });
 
         if (!user) {
-            console.log(`❌ Đăng nhập thất bại: Không tìm thấy user '${loginKey}'`);
+            console.log("❌ User not found in DB");
             return res.status(401).json({ success: false, message: 'Tài khoản không tồn tại' });
         }
 
-        // Kiểm tra password
-        const hash = crypto.createHash('sha256').update(password).digest('hex');
-        // Hỗ trợ cả hash (mới) và plain text (cũ/viewer)
-        const isValid = (user.password_hash === hash) || (user.password === password);
+        console.log("👤 User found:", user.username || user.full_name);
 
+        // Kiểm tra mật khẩu (Hash SHA256)
+        // QUAN TRỌNG: Ép kiểu String(password) để tránh lỗi crash nếu password là số
+        const hash = crypto.createHash('sha256').update(String(password)).digest('hex');
+        
+        // ✅ FIX MẠNH MẼ: Hỗ trợ 3 trường hợp:
+        // 1. password_hash khớp (Chuẩn mới)
+        // 2. password khớp hash (Chuẩn cũ)
+        // 3. password khớp plain text (Trường hợp sửa tay trong DB)
+        const isValid = (user.password_hash === hash) || (user.password === hash) || (user.password === password);
+        
         if (!isValid) {
-            console.log(`❌ Đăng nhập thất bại: Sai mật khẩu cho user '${user.username}'`);
-            return res.status(401).json({ success: false, message: 'Sai mật khẩu' });
+             console.log("❌ Password mismatch");
+             return res.status(401).json({ success: false, message: 'Sai mật khẩu' });
         }
 
-        return res.json({
-            success: true,
-            token: `id_${user._id}_${Date.now()}`,
-            role: user.role || 'owner',
-            // SỬA LỖI: Trả về object user để frontend lưu vào localStorage
-            user: {
-                _id: user._id,
-                full_name: user.full_name,
-                role: user.role || 'owner',
-                viewer_code: user.viewer_code
-            }
-        });
+        // Tạo token: prefix_id_random
+        const prefix = role === 'owner' ? 'id' : 'viewer';
+        // Chuyển ObjectId sang string để đảm bảo an toàn
+        const userIdStr = user._id.toString();
+        const token = `${prefix}_${userIdStr}_${Date.now()}`;
 
+        console.log("✅ Login success. Token generated.");
+        
+        return res.json({ 
+            success: true, 
+            token, 
+            user: { 
+                _id: userIdStr, // Trả về cả _id để frontend dùng
+                id: userIdStr,
+                full_name: user.full_name, 
+                role: user.role 
+            } 
+        });
     } catch (err) {
-        console.error('Login Error:', err);
-        res.status(500).json({ success: false, message: 'Lỗi server: ' + err.message });
+        console.error("💥 LOGIN EXCEPTION:", err);
+        return res.status(500).json({ success: false, message: "Server Error: " + err.message });
     }
 };
 
@@ -90,44 +106,39 @@ exports.register = async (req, res) => {
         const { full_name, email, password } = req.body;
         
         if (!email || !password || !full_name) {
-            return res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ thông tin' });
+            return res.status(400).json({ success: false, message: 'Thiếu thông tin đăng ký' });
         }
 
-        // Kiểm tra email hoặc username đã tồn tại chưa
-        // Username mặc định là email
+        const User = getUserModel();
+
+        // Kiểm tra user tồn tại (theo username hoặc email)
         const existingUser = await User.findOne({ 
-            $or: [{ email: email }, { username: email }] 
+            $or: [{ username: email }, { email: email }] 
         });
         
         if (existingUser) {
-            return res.status(400).json({ success: false, message: 'Email này đã được sử dụng' });
+            return res.status(400).json({ success: false, message: 'Email/Username đã tồn tại' });
         }
 
-        const hash = crypto.createHash('sha256').update(password).digest('hex');
-        
-        // SỬA LỖI: Tự động sinh viewer_code cho tài khoản mới
-        const viewerCode = 'VIEW' + Math.floor(100000 + Math.random() * 900000);
-        
+        const hash = crypto.createHash('sha256').update(String(password)).digest('hex');
+
         const newUser = await User.create({
             full_name,
+            username: email, // ✅ QUAN TRỌNG: Lưu email vào username để đăng nhập được
             email,
-            username: email, // Dùng email làm username mặc định
-            password: hash, // Lưu hash vào trường password để tương thích logic cũ nếu cần
+            password: hash,
             password_hash: hash,
-            role: 'owner',
-            viewer_code: viewerCode // Lưu mã viewer
+            role: 'owner'
         });
         
-        // Tự gán owner_id là chính mình
+        // Tự gán owner_id cho chính mình
         newUser.owner_id = newUser._id;
         await newUser.save();
 
-        // Trả về token để tự động đăng nhập
-        const token = `id_${newUser._id}_${Date.now()}`;
-        return res.json({ success: true, message: 'Đăng ký thành công', token, user: newUser });
-
+        const userIdStr = newUser._id.toString();
+        res.json({ success: true, user: { full_name: newUser.full_name }, token: `id_${userIdStr}_${Date.now()}` });
     } catch (err) {
-        console.error('Register Error:', err);
-        res.status(500).json({ success: false, message: 'Lỗi server khi đăng ký: ' + err.message });
+        console.error("❌ Register Error:", err);
+        res.status(500).json({ success: false, message: err.message });
     }
 };

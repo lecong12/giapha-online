@@ -325,6 +325,41 @@ Nguyễn Văn C,Nam,1980-10-10,,2,Con trưởng,,,Hà Nội,Nguyễn Văn A,`;
     document.body.removeChild(link);
 }
 
+async function backupData() {
+    const token = localStorage.getItem('authToken');
+    if (!token) return alert("Vui lòng đăng nhập lại");
+
+    const btn = document.getElementById('btnBackup'); // Giả sử bạn có nút này
+    if(btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tải...';
+
+    try {
+        const response = await fetch(API_URL + '/api/settings/backup-json', {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `giapha_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            alert("✅ Đã tải bản sao lưu thành công! Hãy lưu file này cẩn thận.");
+        } else {
+            const err = await response.json();
+            alert("❌ Lỗi backup: " + (err.message || response.statusText));
+        }
+    } catch (error) {
+        console.error(error);
+        alert("❌ Lỗi kết nối server");
+    } finally {
+        if(btn) btn.innerHTML = '<i class="fas fa-download"></i> Tải Backup (JSON)';
+    }
+}
+
 async function exportPDF() {
     // Gọi hàm export của FamilyTreeRenderer nếu đang ở tab cây
     if (treeRenderer) {

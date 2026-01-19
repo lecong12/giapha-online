@@ -1,282 +1,106 @@
-// src/controller/membersController.js
 const mongoose = require('mongoose');
 const Person = mongoose.model('Person');
-const User = mongoose.model('User');
-const { logActivity } = require('../utils/activityLogger');
 
-/* ============================================================
-   1. LẤY TẤT CẢ THÀNH VIÊN
-============================================================ */
-async function getAllMembers(req, res) {
-  const userId = req.user.id;
-  const userRole = req.user.role;
+// Lấy danh sách thành viên
+exports.getAllMembers = async (req, res) => {
+    try {
+        const ownerId = req.user.id;
+        const members = await Person.find({ owner_id: ownerId })
+            .sort({ generation: 1, birth_date: 1 });
+        
+        // Format dữ liệu cho frontend
+        const formatted = members.map(m => ({
+            id: m._id,
+            _id: m._id, // ✅ Thêm trường này để tương thích với frontend cũ
+            full_name: m.full_name,
+            gender: m.gender,
+            birth_date: m.birth_date,
+            death_date: m.death_date,
+            generation: m.generation,
+            avatar: m.avatar,
+            // Frontend mong đợi ID đơn lẻ cho dropdown, nhưng DB lưu mảng
+            parent_id: m.parent_id && m.parent_id.length ? m.parent_id[0] : null,
+            spouse_id: m.spouse_id && m.spouse_id.length ? m.spouse_id[0] : null,
+            // Gửi thêm mảng đầy đủ nếu cần
+            parents: m.parent_id,
+            spouse: m.spouse_id
+        }));
 
-  try {
-    let ownerId = userId;
-    if (userRole === 'viewer') {
-      const viewer = await User.findById(userId);
-      if (!viewer || !viewer.owner_id) {
-        return res.status(403).json({ success: false, message: 'Không tìm thấy owner' });
-      }
-      ownerId = viewer.owner_id;
+        res.json({ success: true, members: formatted });
+    } catch (err) {
+        console.error("Get Members Error:", err);
+        res.status(500).json({ success: false, message: err.message });
     }
+};
 
-    const members = await Person.find({ owner_id: ownerId })
-      .sort({ generation: 1, full_name: 1 })
-      .populate('spouse_id', 'full_name') // Populate để lấy tên vợ/chồng
-      .lean();
+// Lấy chi tiết 1 thành viên
+exports.getMemberById = async (req, res) => {
+    try {
+        const member = await Person.findOne({ _id: req.params.id, owner_id: req.user.id })
+            .populate('parent_id', 'full_name')
+            .populate('spouse_id', 'full_name');
+            
+        if (!member) return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
 
-    // Map _id to id và xử lý spouse
-    const result = members.map(m => ({
-      id: m._id,
-      ...m,
-      spouse: m.spouse_id ? { id: m.spouse_id._id, full_name: m.spouse_id.full_name } : null
-    }));
+        const data = {
+            ...member.toObject(),
+            id: member._id,
+            parents: member.parent_id, // Đã populate tên
+            spouse: member.spouse_id && member.spouse_id.length ? member.spouse_id[0] : null
+        };
 
-    return res.json({ success: true, members: result });
-  } catch (err) {
-    console.error('Lỗi getAllMembers:', err);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
-  }
-}
-
-/* ============================================================
-   2. LẤY CHI TIẾT 1 THÀNH VIÊN
-============================================================ */
-async function getMemberById(req, res) {
-  const userId = req.user.id;
-  const userRole = req.user.role;
-  const memberId = req.params.id;
-
-  try {
-    let ownerId = userId;
-    if (userRole === 'viewer') {
-      const viewer = await User.findById(userId);
-      if (!viewer || !viewer.owner_id) return res.status(403).json({ success: false, message: 'Lỗi quyền' });
-      ownerId = viewer.owner_id;
+        res.json({ success: true, member: data });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
+};
 
-    const member = await Person.findOne({ _id: memberId, owner_id: ownerId })
-      .populate('parent_id', 'full_name')
-      .populate('spouse_id', 'full_name')
-      .lean();
+// Tạo thành viên mới
+exports.createMember = async (req, res) => {
+    try {
+        const data = req.body;
+        data.owner_id = req.user.id;
+        
+        // Xử lý parent_id và spouse_id từ form (đơn lẻ) thành mảng
+        if (data.parent_id) data.parent_id = [data.parent_id];
+        if (data.spouse_id) data.spouse_id = [data.spouse_id];
 
-    if (!member) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
+        const newMember = await Person.create(data);
+        res.json({ success: true, member: newMember });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
+};
 
-    // Format lại dữ liệu cho frontend
-    const result = {
-      id: member._id,
-      ...member,
-      parents: member.parent_id ? [member.parent_id] : [], // Frontend mong đợi mảng parents
-      spouse: member.spouse_id ? { id: member.spouse_id._id, full_name: member.spouse_id.full_name } : null
-    };
+// Cập nhật thành viên
+exports.updateMember = async (req, res) => {
+    try {
+        const data = req.body;
+        
+        // Xử lý parent_id và spouse_id
+        if (data.parent_id) data.parent_id = [data.parent_id];
+        if (data.spouse_id) data.spouse_id = [data.spouse_id];
 
-    return res.json({ success: true, member: result });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
-  }
-}
-
-/* ============================================================
-   3. THÊM THÀNH VIÊN MỚI
-============================================================ */
-async function createMember(req, res) {
-  const ownerId = req.user.id;
-  const userId = req.user.id;
-  const userRole = req.user.role;
-
-  const {
-    full_name, gender, birth_date, death_date,
-    avatar, biography, generation, notes,
-    phone, job, address, parent_id, spouse_id,
-    member_type
-  } = req.body;
-
-  if (!full_name) return res.status(400).json({ success: false, message: 'Thiếu họ tên' });
-
-  try {
-    // Xử lý dữ liệu
-    const cleanBirth = (birth_date === 'unknown' || !birth_date) ? null : birth_date;
-    const cleanDeath = (death_date === 'unknown' || !death_date) ? null : death_date;
-    const is_alive = req.body.is_alive !== undefined ? req.body.is_alive : (cleanDeath ? 0 : 1);
-
-    // Logic tính thế hệ (nếu chưa có)
-    let finalGen = parseInt(generation) || 1;
-    
-    if (parent_id) {
-      const parent = await Person.findById(parent_id);
-      if (parent) finalGen = parent.generation + 1;
-    } else if (spouse_id) {
-      const spouse = await Person.findById(spouse_id);
-      if (spouse) finalGen = spouse.generation;
+        const updated = await Person.findOneAndUpdate(
+            { _id: req.params.id, owner_id: req.user.id },
+            data,
+            { new: true }
+        );
+        
+        if (!updated) return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
+        res.json({ success: true, member: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
+};
 
-    // Tạo member mới
-    const newMember = await Person.create({
-      owner_id: ownerId,
-      full_name,
-      gender: gender || 'Nam',
-      birth_date: cleanBirth,
-      death_date: cleanDeath,
-      is_alive: is_alive,
-      avatar, biography, notes, phone, job, address,
-      generation: finalGen,
-      parent_id: parent_id || null,
-      spouse_id: spouse_id || null,
-      member_type: member_type || 'blood'
-    });
-
-    // Cập nhật quan hệ vợ chồng (2 chiều)
-    if (spouse_id) {
-      await Person.findByIdAndUpdate(spouse_id, { spouse_id: newMember._id });
+// Xóa thành viên
+exports.deleteMember = async (req, res) => {
+    try {
+        const deleted = await Person.findOneAndDelete({ _id: req.params.id, owner_id: req.user.id });
+        if (!deleted) return res.status(404).json({ success: false, message: 'Không tìm thấy thành viên' });
+        res.json({ success: true, message: 'Đã xóa thành công' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
-
-    // Log hoạt động
-    const user = await User.findById(userId);
-    const actorName = user ? user.full_name : 'Admin';
-    
-    await logActivity(null, {
-      owner_id: ownerId,
-      actor_id: userId,
-      actor_role: userRole,
-      actor_name: actorName,
-      action_type: 'create',
-      entity_type: 'member',
-      entity_name: full_name,
-      description: `Đã thêm thành viên: ${full_name} (Đời ${finalGen})`
-    });
-
-    return res.json({ success: true, message: 'Tạo thành công', memberId: newMember._id });
-  } catch (err) {
-    console.error('Lỗi createMember:', err);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
-  }
-}
-
-/* ============================================================
-   4. SỬA THÀNH VIÊN
-============================================================ */
-async function updateMember(req, res) {
-  const ownerId = req.user.id;
-  const userId = req.user.id;
-  const memberId = req.params.id;
-  const { full_name, gender, birth_date, death_date, is_alive, avatar, biography, notes, phone, job, address } = req.body;
-
-  try {
-    const member = await Person.findOne({ _id: memberId, owner_id: ownerId });
-    if (!member) return res.status(404).json({ success: false, message: 'Không tìm thấy' });
-
-    // Update fields
-    member.full_name = full_name || member.full_name;
-    member.gender = gender || member.gender;
-    member.birth_date = (birth_date === 'unknown' || !birth_date) ? null : birth_date;
-    member.death_date = (death_date === 'unknown' || !death_date) ? null : death_date;
-    member.is_alive = is_alive !== undefined ? is_alive : member.is_alive;
-    member.avatar = avatar || member.avatar;
-    member.biography = biography || member.biography;
-    member.notes = notes || member.notes;
-    member.phone = phone || member.phone;
-    member.job = job || member.job;
-    member.address = address || member.address;
-
-    await member.save();
-
-    // Log
-    const user = await User.findById(userId);
-    await logActivity(null, {
-      owner_id: ownerId,
-      actor_id: userId,
-      actor_role: req.user.role,
-      actor_name: user ? user.full_name : 'Admin',
-      action_type: 'update',
-      entity_type: 'member',
-      entity_name: full_name,
-      description: `Đã cập nhật: ${full_name}`
-    });
-
-    return res.json({ success: true, message: 'Cập nhật thành công' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
-  }
-}
-
-/* ============================================================
-   5. XÓA THÀNH VIÊN
-============================================================ */
-async function deleteMember(req, res) {
-  const ownerId = req.user.id;
-  const userId = req.user.id;
-  const memberId = req.params.id;
-
-  try {
-    const member = await Person.findOne({ _id: memberId, owner_id: ownerId });
-    if (!member) return res.status(404).json({ success: false, message: 'Không tìm thấy' });
-
-    const memberName = member.full_name;
-
-    // Xóa quan hệ: Set parent_id của con cái về null
-    await Person.updateMany({ parent_id: memberId }, { parent_id: null });
-    
-    // Xóa quan hệ: Set spouse_id của vợ/chồng về null
-    await Person.updateMany({ spouse_id: memberId }, { spouse_id: null });
-
-    // Xóa người
-    await Person.findByIdAndDelete(memberId);
-
-    // Log
-    const user = await User.findById(userId);
-    await logActivity(null, {
-      owner_id: ownerId,
-      actor_id: userId,
-      actor_role: req.user.role,
-      actor_name: user ? user.full_name : 'Admin',
-      action_type: 'delete',
-      entity_type: 'member',
-      entity_name: memberName,
-      description: `Đã xóa thành viên: ${memberName}`
-    });
-
-    return res.json({ success: true, message: 'Xóa thành công' });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
-  }
-}
-
-/* ============================================================
-   6. TÌM KIẾM
-============================================================ */
-async function searchMembers(req, res) {
-  const userId = req.user.id;
-  const { name, generation, gender, status, job, address } = req.body;
-
-  try {
-    const query = { owner_id: userId };
-    if (name) query.full_name = { $regex: name, $options: 'i' };
-    if (generation) query.generation = generation;
-    if (gender && gender !== 'all') query.gender = gender === 'male' ? 'Nam' : 'Nữ';
-    if (status) query.is_alive = status === 'living';
-    if (job) query.job = { $regex: job, $options: 'i' };
-    if (address) query.address = { $regex: address, $options: 'i' };
-
-    const members = await Person.find(query).lean();
-    const result = members.map(m => ({ id: m._id, ...m }));
-
-    return res.json({ success: true, members: result, count: result.length });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: 'Lỗi tìm kiếm' });
-  }
-}
-
-module.exports = {
-  getAllMembers,
-  getMemberById,
-  createMember,
-  updateMember,
-  deleteMember,
-  searchMembers
 };

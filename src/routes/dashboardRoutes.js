@@ -31,6 +31,10 @@ router.get('/stats', checkAuth, async (req, res) => {
         const females = await Person.countDocuments({ owner_id: ownerId, gender: { $in: ['female', 'Nữ'] } });
         
         // 2. Generations
+        // ✅ FIX: Kiểm tra ID hợp lệ trước khi cast để tránh lỗi 500
+        if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+            throw new Error("Invalid Owner ID format for aggregation");
+        }
         const generations = await Person.aggregate([
             { $match: { owner_id: new mongoose.Types.ObjectId(ownerId) } },
             { $group: { _id: "$generation", count: { $sum: 1 } } },
