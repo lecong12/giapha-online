@@ -7,6 +7,9 @@ const fs = require('fs');
 const { parse } = require('csv-parse/sync'); // Dùng sync để xử lý logic phức tạp dễ hơn
 
 const Person = mongoose.model('Person');
+const User = mongoose.model('User');
+const Post = mongoose.model('Post');
+const Activity = mongoose.model('Activity');
 const upload = multer({ dest: 'uploads/' });
 
 // Sử dụng middleware thật
@@ -27,6 +30,22 @@ function normalizeDate(dateStr) {
     const parsed = new Date(str);
     // Nếu parse thành công, trả về định dạng YYYY-MM-DD
     return !isNaN(parsed.getTime()) ? parsed.toISOString().split('T')[0] : null;
+}
+
+// Hàm chuẩn hóa tên để so sánh (xóa khoảng trắng thừa, về chữ thường)
+function normalizeName(name) {
+    if (!name) return '';
+    // "  Nguyễn   Văn A  " -> "nguyễn văn a"
+    return String(name).trim().toLowerCase().replace(/\s+/g, ' '); 
+}
+
+// Hàm chuẩn hóa giới tính
+function normalizeGender(g) {
+    if (!g) return 'Nam';
+    const lower = String(g).trim().toLowerCase();
+    if (['nam', 'male', 'trai', 'm', 'man'].includes(lower)) return 'Nam';
+    if (['nữ', 'nu', 'female', 'gái', 'f', 'woman'].includes(lower)) return 'Nữ';
+    return 'Nam';
 }
 
 // 1. API Import CSV (Từ Google Sheets)
@@ -58,7 +77,7 @@ router.post('/import-csv',
         
         // Cấu hình parse thông minh hơn
         const records = parse(fileContent, { 
-            columns: header => header.trim().toLowerCase(), // Chuyển header về chữ thường để dễ map
+            columns: header => header.map(column => String(column || '').trim().toLowerCase()), // Chuyển từng cột về chữ thường
             skip_empty_lines: true, 
             trim: true,
             bom: true // QUAN TRỌNG: Xử lý ký tự BOM từ Excel
@@ -78,29 +97,31 @@ router.post('/import-csv',
         // 3. Chuẩn bị dữ liệu (Logic giống importData.js)
         for (const r of records) {
             // Map key chữ thường (do cấu hình columns bên trên)
-            const fullName = r['họ và tên'] || r['full_name'] || r['fullname'];
+            const fullName = r['full_name'] || r['fullname'] || r['name'] || r['họ và tên'];
             if (!fullName) continue;
+            const deathDate = normalizeDate(r['death_date'] || r['dod'] || r['ngày mất']);
 
-            const deathDate = normalizeDate(r['ngày mất'] || r['death_date']);
-            const isAlive = !deathDate;
             
             // Xác định loại thành viên sơ bộ
-            const parentName = r['cha/mẹ'] || r['parent_name'] || r['parent'];
-            const spouseName = r['vợ/chồng'] || r['spouse_name'] || r['spouse'];
+            // Hỗ trợ nhiều tên cột tiếng Anh
+            const parentName = r['parent_name'] || r['parent'] || r['father'] || r['mother'] || r['father_name'] || r['mother_name'] || r['cha/mẹ'];
+            const spouseName = r['spouse_name'] || r['spouse'] || r['husband'] || r['wife'] || r['partner'] || r['vợ/chồng'];
+            
             let memberType = 'blood';
             if (!parentName && spouseName) memberType = 'in_law';
 
             const memberData = {
                 owner_id: ownerId,
                 full_name: fullName,
-                gender: r['giới tính'] || r['gender'] || 'Nam',
-                birth_date: normalizeDate(r['ngày sinh'] || r['birth_date']) || null,
+                gender: normalizeGender(r['gender'] || r['sex'] || r['giới tính']),
+                birth_date: normalizeDate(r['birth_date'] || r['dob'] || r['birthday'] || r['ngày sinh']) || null,
                 death_date: deathDate || null,
-                is_alive: isAlive,
-                generation: parseInt(r['đời thứ'] || r['generation']) || 1,
-                address: r['địa chỉ'] || r['address'] || null,
-                job: r['nghề nghiệp'] || r['job'] || null,
-                notes: r['ghi chú'] || r['notes'] || null,
+                is_alive: !deathDate,
+                generation: parseInt(r['generation'] || r['level'] || r['đời thứ']) || 1,
+                order: parseInt(r['order'] || r['stt'] || r['thứ tự']) || null,
+                address: r['address'] || r['location'] || r['địa chỉ'] || null,
+                job: r['job'] || r['occupation'] || r['nghề nghiệp'] || null,
+                notes: r['notes'] || r['description'] || r['ghi chú'] || null,
                 member_type: memberType
             };
             
@@ -116,24 +137,39 @@ router.post('/import-csv',
 
         // 5. Tạo Map Tên -> ID
         insertedMembers.forEach(member => {
-            nameToIdMap.set(member.full_name.trim().toLowerCase(), member._id);
+            // Dùng tên đã chuẩn hóa làm key để tìm kiếm chính xác hơn
+            nameToIdMap.set(normalizeName(member.full_name), member._id);
         });
 
         // 6. Update quan hệ
         let updatedRelations = 0;
+
+        // Hàm tìm ID từ chuỗi tên (hỗ trợ tách dấu phẩy)
+        const findIds = (rawStr) => {
+            if (!rawStr) return [];
+            // Tách theo dấu phẩy hoặc chấm phẩy
+            const names = rawStr.split(/[;,]/).map(s => normalizeName(s)).filter(s => s);
+            const ids = [];
+            names.forEach(name => {
+                const id = nameToIdMap.get(name);
+                if (id) ids.push(id);
+            });
+            return ids;
+        };
+
         for (let i = 0; i < insertedMembers.length; i++) {
             const member = insertedMembers[i];
             const tempInfo = allNewMembersData[i];
             const updatePayload = {};
 
             if (tempInfo.temp_parent) {
-                const parentId = nameToIdMap.get(tempInfo.temp_parent.trim().toLowerCase());
-                if (parentId) updatePayload.parent_id = [parentId]; // LƯU MẢNG
+                const parentIds = findIds(tempInfo.temp_parent);
+                if (parentIds.length > 0) updatePayload.parent_id = parentIds;
             }
 
             if (tempInfo.temp_spouse) {
-                const spouseId = nameToIdMap.get(tempInfo.temp_spouse.trim().toLowerCase());
-                if (spouseId) updatePayload.spouse_id = [spouseId]; // LƯU MẢNG
+                const spouseIds = findIds(tempInfo.temp_spouse);
+                if (spouseIds.length > 0) updatePayload.spouse_id = spouseIds;
             }
 
             if (Object.keys(updatePayload).length > 0) {
@@ -190,6 +226,42 @@ router.get('/export-pdf', checkAuth, (req, res) => {
         success: false, 
         message: 'Tính năng xuất PDF Server-side chưa được hỗ trợ. Vui lòng dùng nút Tải xuống trên biểu đồ cây.' 
     });
+});
+
+// 5. API BACKUP DATA (JSON) - KHẨN CẤP
+router.get('/backup-json', checkAuth, checkOwnerOnly, async (req, res) => {
+    try {
+        const ownerId = req.user.id;
+        console.log(`📦 [Backup] Đang tạo bản sao lưu cho Owner: ${ownerId}`);
+
+        // Lấy toàn bộ dữ liệu liên quan đến Owner này
+        const [members, posts, activities, user] = await Promise.all([
+            Person.find({ owner_id: ownerId }).lean(),
+            Post.find({ owner_id: ownerId }).lean(),
+            Activity.find({ owner_id: ownerId }).lean(),
+            User.findById(ownerId).select('-password -password_hash').lean()
+        ]);
+
+        const backupData = {
+            timestamp: new Date().toISOString(),
+            version: '1.0',
+            user_info: user,
+            stats: {
+                members_count: members.length,
+                posts_count: posts.length
+            },
+            data: { members, posts, activities }
+        };
+
+        // Trả về file JSON để trình duyệt tải xuống
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=giapha_backup_${Date.now()}.json`);
+        res.json(backupData);
+
+    } catch (err) {
+        console.error("Backup Error:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
 });
 
 module.exports = router;

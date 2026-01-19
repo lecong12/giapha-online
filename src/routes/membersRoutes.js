@@ -1,14 +1,15 @@
-// src/routes/membersRoutes.js
 const express = require('express');
 const router = express.Router();
-const membersController = require('../controller/membersController');
-const { checkAuth } = require('../middleware/auth');
+const { getAllMembers, getMemberById, createMember, updateMember, deleteMember } = require('../controller/membersController');
+const { checkAuth, checkOwnerOnly } = require('../middleware/auth');
 
-router.get('/', checkAuth, membersController.getAllMembers);
-router.get('/:id', checkAuth, membersController.getMemberById);
-router.post('/', checkAuth, membersController.createMember);
-router.put('/:id', checkAuth, membersController.updateMember);
-router.delete('/:id', checkAuth, membersController.deleteMember);
-router.post('/search', checkAuth, membersController.searchMembers);
+router.get('/', checkAuth, getAllMembers);
+router.get('/:id', checkAuth, getMemberById);
+router.post('/', checkAuth, checkOwnerOnly, createMember);
+router.put('/:id', checkAuth, checkOwnerOnly, updateMember);
+router.delete('/:id', checkAuth, checkOwnerOnly, deleteMember);
+
+// Route tìm kiếm (tạm thời dùng chung logic lấy tất cả để frontend lọc)
+router.post('/search', checkAuth, getAllMembers);
 
 module.exports = router;

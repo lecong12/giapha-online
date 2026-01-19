@@ -10,7 +10,7 @@ const app = express();
 // KHAI BÁO PORT DUY NHẤT Ở ĐÂY
 const PORT = process.env.PORT || 8060;
 // Hỗ trợ cả MONGO_URI và MONGODB_URI (đề phòng đặt tên khác)
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/giapha';
+let MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/giapha';
 
 // CẤU HÌNH CORS MỞ RỘNG (FIX LỖI KẾT NỐI)
 app.use(cors({
@@ -53,8 +53,7 @@ const safeRoute = (pathStr) => {
     try {
         return require(pathStr);
     } catch (e) {
-        console.warn(`⚠️ Cảnh báo: Không tìm thấy route '${pathStr}'. API này sẽ tạm thời không hoạt động.`);
-        console.warn(`⚠️ Cảnh báo: Không tìm thấy route '${pathStr}' hoặc file bị lỗi. API này sẽ tạm thời không hoạt động. Lỗi: ${e.message}`);
+        console.warn(`⚠️ Cảnh báo: Không tìm thấy route '${pathStr}' hoặc file bị lỗi. API này sẽ tạm thời không hoạt động.\n   👉 Lỗi chi tiết: ${e.message}`);
         return (req, res) => res.status(501).json({ error: "Route not implemented or file missing", path: pathStr });
     }
 };
@@ -133,7 +132,7 @@ app.get('/register', (req, res) => res.sendFile(path.join(PUBLIC_DIR, "views", "
 // KẾT NỐI MONGODB VÀ START SERVER
 // 1. Start Server NGAY LẬP TỨC để Render nhận diện Port (Tránh lỗi Exited Early)
 try {
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
         // Lấy địa chỉ IP LAN để tiện truy cập từ điện thoại
         let lanIp = 'localhost';
         const interfaces = os.networkInterfaces();
@@ -152,6 +151,11 @@ try {
         console.log(`👉 LAN/Wifi: http://${lanIp}:${PORT} (Dùng cái này cho điện thoại)`);
         console.log(`==================================================\n`);
     });
+    
+    // Tăng timeout cho server để tránh lỗi 502 Bad Gateway trên Render khi xử lý nặng
+    server.keepAliveTimeout = 120 * 1000;
+    server.headersTimeout = 120 * 1000;
+
 } catch (err) {
     console.error("❌ KHÔNG THỂ KHỞI ĐỘNG SERVER:", err.message);
 }
@@ -172,6 +176,15 @@ const connectDB = async () => {
         initAdmin(); // Khởi tạo admin sau khi kết nối
     } catch (err) {
         console.error("❌ Lỗi kết nối MongoDB:", err.message);
+
+        // ✅ FIX: Tự động chuyển về Localhost nếu sai mật khẩu hoặc lỗi Auth
+        if (err.message.includes('auth') || err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
+            console.warn("\n⚠️ CẢNH BÁO: Đăng nhập Database thất bại (Sai mật khẩu/User).");
+            console.warn("👉 Hệ thống sẽ chuyển sang Database nội bộ (Localhost) để bạn có thể tiếp tục làm việc.");
+            MONGO_URI = 'mongodb://127.0.0.1:27017/giapha';
+            return connectDB(); // Thử lại ngay lập tức với Localhost
+        }
+
         console.log("⏳ Đang thử lại sau 5 giây...");
         setTimeout(connectDB, 5000);
     }
@@ -202,9 +215,21 @@ const initAdmin = async () => {
                 admin.owner_id = admin._id;
                 await admin.save();
             }
+
+            // KIỂM TRA DỮ LIỆU TRỐNG ĐỂ CẢNH BÁO
+            const Person = mongoose.model('Person');
+            const count = await Person.countDocuments({ owner_id: admin._id });
+            
             console.log("\n🔑 ========================================================");
-            console.log("👤 TÀI KHOẢN ADMIN (Chứa dữ liệu mẫu/import):");
+            console.log("👤 TÀI KHOẢN ADMIN (Đã được khôi phục nếu bị xóa):");
             console.log("👉 User: admin  |  Pass: 123");
+            if (count === 0) {
+                console.log("⚠️ CẢNH BÁO: Database đang TRỐNG!");
+                console.log("👉 Hãy chạy lệnh: node importData.js (trên máy tính)");
+                console.log("👉 Hoặc vào Web -> Cài đặt -> Import CSV");
+            } else {
+                console.log(`✅ Đang có ${count} thành viên trong hệ thống.`);
+            }
             console.log("========================================================\n");
         } catch (e) {
             console.error("⚠️ Lỗi khởi tạo Admin:", e.message);

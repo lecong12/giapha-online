@@ -142,30 +142,37 @@
             const errorMsg = document.getElementById('loginError');
             const role = document.getElementById('loginRole').value;
             
-            // Lấy username tùy theo vai trò (Admin dùng Email/Username, Viewer dùng Code)
-            let username = '';
-            if (role === 'owner') {
-                username = document.getElementById('loginUsername').value.trim();
-            } else {
-                username = document.getElementById('viewerCode').value.trim();
-            }
             const password = document.getElementById('loginPassword').value;
+            let payload = { password };
 
-            if (!username || !password) {
-                errorMsg.textContent = "Vui lòng nhập đầy đủ thông tin.";
-                return;
+            if (role === 'owner') {
+                const username = document.getElementById('loginUsername').value.trim();
+                if (!username || !password) {
+                    errorMsg.textContent = "Vui lòng nhập đầy đủ thông tin.";
+                    return;
+                }
+                payload.username = username;
+                payload.role = 'owner';
+            } else {
+                const viewerCode = document.getElementById('viewerCode').value.trim();
+                if (!viewerCode || !password) {
+                    errorMsg.textContent = "Vui lòng nhập đầy đủ thông tin.";
+                    return;
+                }
+                payload.viewer_code = viewerCode;
+                payload.role = 'viewer';
             }
 
             // Hiệu ứng loading
             btn.disabled = true;
             errorMsg.textContent = "";
-            console.log("Đang gửi yêu cầu đăng nhập...", { username, role });
+            console.log("Đang gửi yêu cầu đăng nhập...", payload);
 
             try {
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await res.json();
