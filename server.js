@@ -10,7 +10,7 @@ const app = express();
 // KHAI BÁO PORT DUY NHẤT Ở ĐÂY
 const PORT = process.env.PORT || 8060;
 // Hỗ trợ cả MONGO_URI và MONGODB_URI (đề phòng đặt tên khác)
-let MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/giapha';
+let MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/GiaphaDB';
 
 // CẤU HÌNH CORS MỞ RỘNG (FIX LỖI KẾT NỐI)
 app.use(cors({
@@ -181,7 +181,7 @@ const connectDB = async () => {
         if (err.message.includes('auth') || err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
             console.warn("\n⚠️ CẢNH BÁO: Đăng nhập Database thất bại (Sai mật khẩu/User).");
             console.warn("👉 Hệ thống sẽ chuyển sang Database nội bộ (Localhost) để bạn có thể tiếp tục làm việc.");
-            MONGO_URI = 'mongodb://127.0.0.1:27017/giapha';
+            MONGO_URI = 'mongodb://127.0.0.1:27017/GiaphaDB';
             return connectDB(); // Thử lại ngay lập tức với Localhost
         }
 

@@ -19,15 +19,15 @@ async function start() {
     try {
         console.log("🚀 Bước 1: Khởi động kết nối Database...");
         // ✅ FIX: Đồng bộ logic lấy URI giống server.js
-        let MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/giapha';
+        let MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
         
         try {
-            await mongoose.connect(MONGO_URI);
+            await mongoose.connect(MONGO_URI, { dbName: 'GiaphaDB' }); // ✅ Dùng option dbName để an toàn với mọi loại URI
         } catch (err) {
             if (err.message.includes('auth') || err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
                 console.warn("⚠️ Kết nối Cloud thất bại (Sai mật khẩu). Đang chuyển sang Localhost...");
-                MONGO_URI = 'mongodb://127.0.0.1:27017/giapha';
-                await mongoose.connect(MONGO_URI);
+                MONGO_URI = 'mongodb://127.0.0.1:27017';
+                await mongoose.connect(MONGO_URI, { dbName: 'GiaphaDB' });
             } else {
                 throw err;
             }
@@ -64,42 +64,18 @@ async function start() {
         const moCol = (records.length ? findCol(records[0], ['mother_order', 'm_order', 'me_thu', 'mother_index', 'thu_tu_me']) : null) || 'mother_order';
 
         if (records.length > 0) {
-            console.log("🔍 Headers Sheet Data:", Object.keys(records[0]));
-            console.log(`👉 Cột dùng làm ID Cha: '${fidCol}'`);
-            console.log(`👉 Cột dùng làm Thứ tự Mẹ: '${moCol}'`);
+            console.log(`   - Sheet Data: ${records.length} dòng.`);
+            console.log(`   👉 Cấu hình cột: Cha='${fidCol}' | Thứ tự Mẹ='${moCol}'`);
         }
         if (spouseRecords.length > 0) {
-            console.log("🔍 Headers Sheet dData:", Object.keys(spouseRecords[0]));
-            console.log(`👉 Cột dùng làm ID Liên kết Vợ/Chồng: '${pidCol}'`);
-        }
-
-        // 🔍 DEBUG: Kiểm tra dữ liệu cụ thể của ông Lê Công Nên
-        const targetName = "Lê Công Nên";
-        const debugPerson = records.find(r => r.full_name && r.full_name.includes(targetName));
-        if (debugPerson) {
-            console.log(`\n🔍 --- DEBUG CHI TIẾT: ${targetName} ---`);
-            console.log("1. Dữ liệu gốc từ CSV:", JSON.stringify(debugPerson, null, 2));
-            console.log("2. ID của ông này (đã clean):", clean(debugPerson.id));
-            console.log(`3. ID Cha (Cột '${fidCol}') đã clean:`, clean(debugPerson[fidCol]));
-            
-            // Kiểm tra xem có ai nhận ông này làm chồng không (trong sheet dData)
-            const myId = clean(debugPerson.id);
-            const spouseRecord = spouseRecords.find(r => clean(r[pidCol]) === myId);
-            if (spouseRecord) {
-                console.log("4. ✅ Tìm thấy bản ghi Vợ trong dData:", spouseRecord.full_name);
-                console.log("   - ID Vợ:", spouseRecord.id);
-                console.log(`   - Cột '${pidCol}' trỏ tới:`, spouseRecord[pidCol]);
-            } else {
-                console.log("4. ❌ KHÔNG tìm thấy bản ghi Vợ nào trỏ tới ID:", myId);
-                console.log(`   (Đang tìm trong cột '${pidCol}' của sheet dData)`);
-            }
-            console.log("---------------------------------------------\n");
+            console.log(`   - Sheet dData: ${spouseRecords.length} dòng.`);
+            console.log(`   👉 Cấu hình cột: Liên kết Vợ/Chồng='${pidCol}'`);
         }
 
         console.log("🗑️ Bước 3: Đang dọn dẹp dữ liệu cũ...");
         await Person.deleteMany({ owner_id: ownerId });
 
-        console.log(" Bước 4: Đang nạp dữ liệu ");
+        console.log("💾 Bước 4: Đang nạp dữ liệu vào Database...");
         
         const mapPerson = (r, type) => ({
             owner_id: ownerId,
@@ -134,9 +110,9 @@ async function start() {
         ];
 
         await Person.insertMany(allPeopleToInsert);
-        console.log(`✅ Đã nạp xong ${allPeopleToInsert.length} thành viên.`);
+        console.log(`   ✅ Đã lưu ${allPeopleToInsert.length} hồ sơ thành viên.`);
 
-        console.log(" Bước 5: Đang thiết lập quan hệ dựa trên cột trung gian...");
+        console.log("🔗 Bước 5: Đang thiết lập quan hệ (Vợ/Chồng, Cha/Con)...");
         
         // ✅ Tải lại dữ liệu kèm các cột tạm để ánh xạ
         const allInDb = await Person.find({ owner_id: ownerId }).select('_id temp_id temp_parent_uid temp_spouse_uid temp_mother_order order');
