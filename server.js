@@ -65,6 +65,7 @@ app.use("/api/posts", safeRoute("./src/routes/postsRoutes"));
 app.use("/api/viewers", safeRoute("./src/routes/viewerRoutes"));
 app.use("/api/activities", safeRoute("./src/routes/activityRoutes"));
 app.use("/api/settings", safeRoute("./src/routes/settingsRoutes"));
+app.use("/api/family-tree", safeRoute("./src/routes/familyTreeRoutes")); // ✅ Route mới cho cây gia phả
 
 // --- API HEALTH CHECK (Để Frontend kiểm tra kết nối) ---
 app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Server is running' }));
@@ -179,6 +180,13 @@ const connectDB = async () => {
 
         // ✅ FIX: Tự động chuyển về Localhost nếu sai mật khẩu hoặc lỗi Auth
         if (err.message.includes('auth') || err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
+            // Nếu đang chạy trên Render, KHÔNG được fallback về localhost (vì không có DB local)
+            if (process.env.RENDER) {
+                console.error("❌ Đang chạy trên Render. Dừng fallback về Localhost để báo lỗi chính xác.");
+                console.error("👉 Vui lòng kiểm tra lại biến môi trường MONGO_URI trong Dashboard của Render (Settings -> Environment Variables).");
+                return;
+            }
+
             console.warn("\n⚠️ CẢNH BÁO: Đăng nhập Database thất bại (Sai mật khẩu/User).");
             console.warn("👉 Hệ thống sẽ chuyển sang Database nội bộ (Localhost) để bạn có thể tiếp tục làm việc.");
             MONGO_URI = 'mongodb://127.0.0.1:27017/GiaphaDB';

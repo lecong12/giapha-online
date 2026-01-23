@@ -18,6 +18,7 @@ const { checkAuth, checkOwnerOnly } = require('../middleware/auth');
 // Hàm chuẩn hóa ngày tháng (Hỗ trợ DD/MM/YYYY -> YYYY-MM-DD)
 function normalizeDate(dateStr) {
     if (!dateStr || dateStr === 'unknown') return null;
+    if (dateStr instanceof Date) return dateStr.toISOString().split('T')[0];
     const str = String(dateStr).trim();
 
     // Ưu tiên xử lý dạng DD/MM/YYYY hoặc DD-MM-YYYY
@@ -80,6 +81,8 @@ router.post('/import-csv',
             columns: header => header.map(column => String(column || '').trim().toLowerCase()), // Chuyển từng cột về chữ thường
             skip_empty_lines: true, 
             trim: true,
+            // ✅ FIX: mapHeaders để xử lý BOM triệt để hơn nếu option bom: true không bắt được hết
+            map_headers: ({ header }) => header.trim().replace(/^\uFEFF/, ''),
             bom: true // QUAN TRỌNG: Xử lý ký tự BOM từ Excel
         });
         
@@ -99,7 +102,7 @@ router.post('/import-csv',
             // Map key chữ thường (do cấu hình columns bên trên)
             const fullName = r['full_name'] || r['fullname'] || r['name'] || r['họ và tên'];
             if (!fullName) continue;
-            const deathDate = normalizeDate(r['death_date'] || r['dod'] || r['ngày mất']);
+            const deathDate = normalizeDate(r['death_date'] || r['dod'] || r['ngày mất'] || r['death']);
 
             
             // Xác định loại thành viên sơ bộ

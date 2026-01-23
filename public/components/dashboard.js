@@ -537,9 +537,13 @@ async function loadMembers() {
         if (data && data.success) {
             allMembers = data.members;
             renderMembers(allMembers);
+        } else {
+            console.error('Failed to load members:', data);
+            // Không alert để tránh spam, nhưng log đỏ trong console
         }
     } catch (err) {
         console.error('Error loading members:', err);
+        // alert('Lỗi kết nối khi tải danh sách thành viên');
     }
 }
 
@@ -569,6 +573,7 @@ function renderMembers(members) {
                 <h3 style="margin:0; font-size:16px; font-weight:600;">${m.full_name}</h3>
                 <p style="margin:4px 0 0; font-size:13px; color:#666;">Đời thứ ${m.generation}</p>
                 <p style="margin:2px 0 0; font-size:12px; color:#999;">${m.birth_date || '?'}</p>
+                ${m.job ? `<p style="margin:2px 0 0; font-size:12px; color:#4b5563;">💼 ${m.job}</p>` : ''}
             </div>
         `;
         
@@ -714,8 +719,8 @@ async function openEditMemberModal(id) {
             document.getElementById('memberNote').value = m.notes || '';
             
             populatePersonDropdown();
-            if(m.parent_id) document.getElementById('memberParent').value = m.parent_id;
-            if(m.spouse_id) document.getElementById('memberSpouse').value = m.spouse_id;
+            if(m.parent_id) document.getElementById('memberParent').value = m.parent_id._id || m.parent_id;
+            if(m.spouse_id) document.getElementById('memberSpouse').value = m.spouse_id._id || m.spouse_id;
 
             modal.classList.add('active');
         }

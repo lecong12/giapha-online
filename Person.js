@@ -15,6 +15,7 @@ const PersonSchema = new mongoose.Schema({
     branch: { type: String }, 
     order: { type: Number }, 
     phone: { type: String },
+    job: { type: String }, // ✅ Thêm trường nghề nghiệp
     address: { type: String },
     notes: { type: String },
     photo: { type: String }, // Đổi từ avatar thành photo cho khớp cột Excel
@@ -34,6 +35,6 @@ const PersonSchema = new mongoose.Schema({
     temp_parent_uid: { type: String, select: false }, // Lưu ID cha thô từ CSV
     temp_spouse_uid: { type: String, select: false },  // Lưu ID vợ/chồng thô từ CSV
     temp_mother_order: { type: Number, select: false } // ✅ MỚI: Lưu thứ tự mẹ (để xác định con bà nào)
-}, { timestamps: true });
+}, { timestamps: true, collection: 'members' }); // ✅ Ép tên bảng là 'members' thay vì mặc định 'people'
 
 module.exports = mongoose.models.Person || mongoose.model('Person', PersonSchema);

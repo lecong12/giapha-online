@@ -12,8 +12,24 @@ const Person = mongoose.model('Person');
 const sheetDataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRv6nPNO982vfr9JJmYHtwWh1XPY_3qDKhJjo1fEHy3jb9034Z_IZPqFveLZyqjODVm-OHN7aogE-MH/pub?gid=1705210560&single=true&output=csv";
 const sheetDDataUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRv6nPNO982vfr9JJmYHtwWh1XPY_3qDKhJjo1fEHy3jb9034Z_IZPqFveLZyqjODVm-OHN7aogE-MH/pub?gid=1565376107&single=true&output=csv";
 
-// ✅ FIX: Nới lỏng hàm clean, chỉ trim khoảng trắng, giữ lại dấu chấm/gạch ngang nếu có trong ID
-const clean = (v) => (v !== undefined && v !== null && String(v).trim() !== '') ? String(v).trim() : null;
+// ✅ FIX: Hàm clean mạnh mẽ hơn, chuyển mọi thứ thành String chuẩn
+const clean = (v) => {
+    if (v === undefined || v === null) return null;
+    const s = String(v).trim();
+    return s === '' ? null : s;
+};
+
+// ✅ Hàm chuẩn hóa ngày tháng (DD/MM/YYYY -> YYYY-MM-DD)
+const normalizeDate = (dateStr) => {
+    if (!dateStr) return "";
+    const s = String(dateStr).trim();
+    // Regex bắt DD/MM/YYYY hoặc DD-MM-YYYY
+    const dmy = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    if (dmy) {
+        return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+    }
+    return s; // Trả về nguyên gốc nếu không khớp (để user tự sửa sau)
+};
 
 async function start() {
     try {
@@ -32,6 +48,15 @@ async function start() {
                 throw err;
             }
         }
+
+        // ✅ DỌN DẸP: Xóa bảng cũ 'people' nếu tồn tại (vì đã đổi sang 'members')
+        try {
+            const collections = await mongoose.connection.db.listCollections({ name: 'people' }).toArray();
+            if (collections.length > 0) {
+                await mongoose.connection.db.dropCollection('people');
+                console.log("🗑️ Đã xóa bảng cũ 'people' để chuyển sang dùng bảng 'members'.");
+            }
+        } catch (e) { /* Bỏ qua lỗi nếu bảng không tồn tại */ }
         
         const admin = await User.findOne({ username: 'admin' });
         if (!admin) {
@@ -87,11 +112,12 @@ async function start() {
             // Logic: Nếu nhập '0' thì false, còn lại (1 hoặc để trống) là true
             is_alive: r.is_alive !== '0', 
             
-            birth_date: r.birth_date || "",
-            death_date: r.death_date || "",
+            birth_date: normalizeDate(r.birth_date),
+            death_date: normalizeDate(r.death_date),
             photo: r.photo || "",
             address: r.address || "",
             phone: r.phone || "",
+            job: r.job || r.occupation || r['nghề nghiệp'] || "",
             branch: r.branch || "",
             generation: parseInt(r.generation) || 1,
             order: parseInt(r.order) || 0,
