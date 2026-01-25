@@ -104,10 +104,6 @@ class FamilyTreeRenderer {
         this.setupPanZoom();
     }
     setTargetPerson(id) {
-    this.targetPersonId = id;
-    this.processData();
-    this.render();
-}
     /**
      * Load dữ liệu từ API
      * @param {number|null} personId - ID người cần hiển thị cây (null = mặc định id=1)

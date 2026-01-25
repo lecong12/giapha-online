@@ -126,7 +126,7 @@ async function start() {
             temp_id: `${type}_${clean(r.id)}`,
             // ✅ LƯU DỮ LIỆU THÔ VÀO CỘT TRUNG GIAN ĐỂ XỬ LÝ SAU
             temp_parent_uid: type === 'blood' ? clean(r[fidCol]) : null,
-            temp_spouse_uid: type === 'spouse' ? clean(r[pidCol]) : null,
+            temp_spouse_uid: (type === 'spouse' || type === 'in_law') ? clean(r[pidCol]) : null,
             temp_mother_order: (type === 'blood' && r[moCol]) ? parseInt(r[moCol]) : null // ✅ Lưu thứ tự mẹ
         });
 
