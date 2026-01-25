@@ -28,8 +28,17 @@ app.use((req, res, next) => {
 });
 
 // --- ĐẢM BẢO THƯ MỤC UPLOADS TỒN TẠI ---
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
+// CẢNH BÁO: Các nền tảng hosting (Render, Heroku) thường có hệ thống file chỉ đọc (read-only) hoặc tạm thời (ephemeral).
+// Việc tạo thư mục và lưu file trực tiếp trên server có thể không hoạt động hoặc file sẽ bị xóa sau mỗi lần deploy.
+// Giải pháp tốt nhất là dùng dịch vụ lưu trữ cloud như Cloudinary, AWS S3...
+// Đoạn code dưới đây được bọc trong try-catch để tránh crash server khi không có quyền ghi.
+try {
+    if (!fs.existsSync('uploads')) {
+        fs.mkdirSync('uploads');
+        console.log("✅ Đã tạo thư mục 'uploads'.");
+    }
+} catch (err) {
+    console.warn("⚠️ Cảnh báo: Không thể tạo thư mục 'uploads'. Chức năng upload file có thể không hoạt động.", err.message);
 }
 
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -177,24 +186,25 @@ const connectDB = async () => {
         initAdmin(); // Khởi tạo admin sau khi kết nối
     } catch (err) {
         console.error("❌ Lỗi kết nối MongoDB:", err.message);
+        
+        // ✅ FIX DEPLOY: Trong môi trường production (Render, Heroku...), nếu không kết nối được DB thì phải báo lỗi và thoát.
+        // Không được fallback về localhost hoặc thử lại vô hạn.
+        if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+            console.error("👉 LỖI NGHIÊM TRỌNG: Không thể kết nối Database trên môi trường production. Server sẽ dừng lại.");
+            console.error("👉 KIỂM TRA LẠI: Biến môi trường MONGO_URI đã được cấu hình đúng trên hosting chưa.");
+            process.exit(1); // Thoát tiến trình với mã lỗi
+        }
 
-        // ✅ FIX: Tự động chuyển về Localhost nếu sai mật khẩu hoặc lỗi Auth
-        if (err.message.includes('auth') || err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
-            // Nếu đang chạy trên Render, KHÔNG được fallback về localhost (vì không có DB local)
-            if (process.env.RENDER) {
-                console.error("❌ Đang chạy trên Render. Dừng fallback về Localhost để báo lỗi chính xác.");
-                console.error("👉 Vui lòng kiểm tra lại biến môi trường MONGO_URI trong Dashboard của Render (Settings -> Environment Variables).");
-                return;
-            }
-
+        // Nếu đang ở môi trường dev, thử fallback về localhost
+        if (MONGO_URI.includes('@')) { // Heuristic: Nếu có @, tức là đang dùng link cloud
             console.warn("\n⚠️ CẢNH BÁO: Đăng nhập Database thất bại (Sai mật khẩu/User).");
             console.warn("👉 Hệ thống sẽ chuyển sang Database nội bộ (Localhost) để bạn có thể tiếp tục làm việc.");
             MONGO_URI = 'mongodb://127.0.0.1:27017/GiaphaDB';
             return connectDB(); // Thử lại ngay lập tức với Localhost
         }
 
-        console.log("⏳ Đang thử lại sau 5 giây...");
-        setTimeout(connectDB, 5000);
+        console.log("⏳ Thử kết nối lại sau 5 giây...");
+        setTimeout(connectDB, 5000); // Ở môi trường dev, tiếp tục thử lại
     }
 };
 

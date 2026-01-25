@@ -39,13 +39,17 @@ async function start() {
         
         try {
             await mongoose.connect(MONGO_URI, { dbName: 'GiaphaDB' }); // ✅ Dùng option dbName để an toàn với mọi loại URI
+            console.log(`✅ Đã kết nối tới DB: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}`);
         } catch (err) {
-            if (err.message.includes('auth') || err.message.includes('Authentication failed') || err.message.includes('bad auth')) {
+            // ✅ FIX DEPLOY: Không fallback về localhost trên môi trường production
+            if ((process.env.NODE_ENV === 'production' || process.env.RENDER) || !err.message.toLowerCase().includes('auth')) {
+                console.error("❌ Lỗi kết nối MongoDB khi import:", err.message);
+                console.error("👉 Script sẽ dừng lại. Vui lòng kiểm tra biến môi trường MONGO_URI.");
+                throw err; // Ném lỗi để dừng script
+            } else {
                 console.warn("⚠️ Kết nối Cloud thất bại (Sai mật khẩu). Đang chuyển sang Localhost...");
                 MONGO_URI = 'mongodb://127.0.0.1:27017';
                 await mongoose.connect(MONGO_URI, { dbName: 'GiaphaDB' });
-            } else {
-                throw err;
             }
         }
 
