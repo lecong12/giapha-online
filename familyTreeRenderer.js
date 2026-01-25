@@ -103,7 +103,14 @@ class FamilyTreeRenderer {
         this.isFullTreeMode = false; // Flag theo dõi chế độ hiển thị
         this.setupPanZoom();
     }
+    // ✅ FIX: Sửa lỗi cú pháp nghiêm trọng.
+    // Hàm setTargetPerson bị thiếu phần thân và dấu "}", khiến cho hàm loadData bị lồng vào trong,
+    // gây lỗi khi deploy trên các hệ thống có kiểm tra code (build step).
     setTargetPerson(id) {
+        this.targetPersonId = id;
+        this.selectedPersonId = id;
+        this.render(id); // Gọi render để tải và vẽ lại cây cho người được chọn
+    }
     /**
      * Load dữ liệu từ API
      * @param {number|null} personId - ID người cần hiển thị cây (null = mặc định id=1)

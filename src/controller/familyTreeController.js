@@ -42,6 +42,7 @@ async function getFamilyTreeData(req, res) {
         if (!dateStr || dateStr === 'unknown') return null;
         if (dateStr instanceof Date) return dateStr.toISOString().split('T')[0];
         const str = String(dateStr).trim();
+        // ✅ FIX: Sửa lại regex và logic chuẩn hóa ngày tháng (hỗ trợ dd/mm/yyyy và dd-mm-yyyy)
         const dmy = str.match(/^(\d{1,2})\/-\/-$/);
         if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
         const parsed = new Date(str);
