@@ -19,7 +19,7 @@ class FamilyTreeRenderer {
             return;
         }
 
-        this.targetPersonId = 1; // mặc định
+        this.targetPersonId = null; // mặc định
         // Cấu hình Kích thước & Màu sắc
         this.config = {
             cardWidth: 160,
@@ -165,7 +165,7 @@ class FamilyTreeRenderer {
     console.log(`🔍 Lọc cây cho: ${selectedPerson.full_name} (${selectedPerson.member_type || 'blood'})`);
     
     // ✅ KIỂM TRA: Người này là DÂU/RỄ không?
-    const isInLaw = selectedPerson.member_type === 'in_law';
+    const isInLaw = selectedPerson.member_type === 'in_law' || selectedPerson.member_type === 'spouse';
     
     if (isInLaw) {
         console.log('👰 Người này là dâu/rễ → Hiển thị cây theo vợ/chồng');
@@ -459,7 +459,7 @@ async render(personId = null) {
     const currentTargetId = this.selectedPersonId || this.targetPersonId;
     
     // ✅ FIX: Tìm root TỪ this.members (đã lọc) thay vì peopleMap
-    let rootPerson = this.members.find(p => p.id === currentTargetId);
+    let rootPerson = this.members.find(p => p.id == currentTargetId);
 
     // ✅ Nếu không tìm thấy → lấy người đầu tiên
     if (!rootPerson && this.members.length > 0) {
@@ -1155,7 +1155,7 @@ yearText.textContent = `s. ${birthYear}`;
             const mouse = this.getSVGPoint(event.clientX, event.clientY);
             const oldScale = this.scale;
 
-            const zoomIntensity = 0.01
+            const zoomIntensity = 0.01;
             const factor = Math.exp(-event.deltaY * zoomIntensity);
 
             let newScale = oldScale * factor;
@@ -1551,77 +1551,6 @@ renderMultipleTrees(trees) {
 flattenTreeToArray(node, result) {
     result.push(node);
     node.childrenNodes.forEach(child => this.flattenTreeToArray(child, result));
-}
-/**
- * Tính layout cho 1 cây
- */
-calculateTreeLayout(tree) {
-    // Logic tính toán width/height dựa trên số node
-    const levels = this.countLevels(tree);
-    const maxNodesPerLevel = this.countMaxNodesPerLevel(tree);
-    
-    return {
-        width: maxNodesPerLevel * 200,
-        height: levels * 150
-    };
-}
-
-/**
- * Đếm số tầng của cây
- */
-countLevels(node, level = 1) {
-    if (!node.children || node.children.length === 0) {
-        return level;
-    }
-    
-    return Math.max(
-        ...node.children.map(child => this.countLevels(child, level + 1))
-    );
-}
-
-/**
- * Đếm số node tối đa trong 1 tầng
- */
-countMaxNodesPerLevel(node) {
-    const levels = {};
-    
-    const traverse = (n, level) => {
-        if (!levels[level]) levels[level] = 0;
-        levels[level]++;
-        
-        if (n.children) {
-            n.children.forEach(child => traverse(child, level + 1));
-        }
-    };
-    
-    traverse(node, 1);
-    
-    return Math.max(...Object.values(levels));
-}
-
-/**
- * Tính chiều cao tối đa của nhiều cây
- */
-calculateMaxHeight(trees) {
-    return Math.max(...trees.map(tree => {
-        const layout = this.calculateTreeLayout(tree);
-        return layout.height;
-    }));
-}
-
-/**
- * Vẽ 1 cây tại vị trí cụ thể
- */
-drawTree(tree, startX, startY) {
-    // Giữ nguyên logic vẽ cây hiện tại
-    // Nhưng offset tất cả node bằng startX và startY
-    
-    const drawNode = (node, x, y, level) => {
-        // Vẽ node tại (startX + x, startY + y)
-        // ... (logic vẽ node, spouse, children)
-    };
-    
-    drawNode(tree, 0, 0, 1);
 }
 async exportPDF() {
     this.showNotification('📄 Đang xử lý hình ảnh và tạo PDF...');

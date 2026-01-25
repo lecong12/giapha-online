@@ -131,8 +131,8 @@ async function start() {
         });
 
         const allPeopleToInsert = [
-            ...records.filter(r => r.full_name).map(r => mapPerson(r, 'blood')),
-            ...spouseRecords.filter(r => r.full_name).map(r => mapPerson(r, 'spouse'))
+            ...records.filter(r => r.full_name && clean(r[fidCol] || r.id)).map(r => mapPerson(r, 'blood')),
+            ...spouseRecords.filter(r => r.full_name && clean(r[pidCol] || r.id)).map(r => mapPerson(r, 'in_law'))
         ];
 
         await Person.insertMany(allPeopleToInsert);
@@ -167,7 +167,7 @@ async function start() {
                     addSpouseLink(p._id, partnerMongoId);
                 } else {
                     // Fallback: Thử tìm trong sheet spouse (ít gặp nhưng có thể xảy ra)
-                    const partnerSpouseId = idMap.get(`spouse_${p.temp_spouse_uid}`);
+                    const partnerSpouseId = idMap.get(`in_law_${p.temp_spouse_uid}`);
                     if (partnerSpouseId) addSpouseLink(p._id, partnerSpouseId);
                 }
             }
