@@ -927,7 +927,7 @@ async render(personId = null) {
         if (isMale) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128176.png'; // Nam
         if (isFemale) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128349.png'; // Nữ
 
-        const avatarUrl = person.avatar_url || defaultAvatar;
+        const avatarUrl = person.photo || defaultAvatar; // ✅ FIX: Dùng đúng trường 'photo' trong DB
         img.setAttribute('href', avatarUrl);
         g.appendChild(img);
 
@@ -1094,7 +1094,7 @@ yearText.textContent = `s. ${birthYear}`;
         if (['nam', 'male', 'trai'].includes(genderLower)) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128176.png';
         if (['nữ', 'nu', 'female', 'gái'].includes(genderLower)) defaultAvatar = 'https://cdn-icons-png.flaticon.com/512/4128/4128349.png';
 
-        const avatarUrl = person.avatar_url || defaultAvatar;
+        const avatarUrl = person.photo || defaultAvatar; // ✅ FIX: Dùng đúng trường 'photo'
         
         content.innerHTML = `
             <div style="display: flex; gap: 20px; align-items: start; margin-bottom: 20px;">

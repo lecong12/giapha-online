@@ -4,8 +4,10 @@ const { parse } = require('csv-parse/sync');
 require('dotenv').config();
 
 // Load Models
-require('./User');
-require('./Person');
+// ✅ FIX: Dùng file Model mới
+require('./UserModel');
+require('./PersonModel');
+
 const User = mongoose.model('User');
 const Person = mongoose.model('Person');
 
@@ -37,12 +39,16 @@ async function start() {
         // ✅ FIX: Đồng bộ logic lấy URI giống server.js
         let MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
         
+        if (MONGO_URI) MONGO_URI = MONGO_URI.trim();
+        if (MONGO_URI.startsWith('"') && MONGO_URI.endsWith('"')) MONGO_URI = MONGO_URI.slice(1, -1);
+        if (MONGO_URI.startsWith("'") && MONGO_URI.endsWith("'")) MONGO_URI = MONGO_URI.slice(1, -1);
+
         try {
             await mongoose.connect(MONGO_URI, { dbName: 'GiaphaDB' }); // ✅ Dùng option dbName để an toàn với mọi loại URI
             console.log(`✅ Đã kết nối tới DB: ${MONGO_URI.replace(/:([^:@]+)@/, ':****@')}`);
         } catch (err) {
             // ✅ FIX DEPLOY: Không fallback về localhost trên môi trường production
-            if ((process.env.NODE_ENV === 'production' || process.env.RENDER) || !err.message.toLowerCase().includes('auth')) {
+            if ((process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.RAILWAY_ENVIRONMENT) || !err.message.toLowerCase().includes('auth')) {
                 console.error("❌ Lỗi kết nối MongoDB khi import:", err.message);
                 console.error("👉 Script sẽ dừng lại. Vui lòng kiểm tra biến môi trường MONGO_URI.");
                 throw err; // Ném lỗi để dừng script
